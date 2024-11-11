@@ -4,6 +4,8 @@ This is an [Agda](https://wiki.portal.chalmers.se/agda/) formalisation
 of part of the University of Cambridge [Semantics of Programming Languages](https://www.cl.cam.ac.uk/teaching/current/Semantics) course,
 based on the [course lecture notes](https://www.cl.cam.ac.uk/teaching/2324/Semantics/notes.pdf).
 
+- [ ] 29. Congruence for L1
+
 ![GitHub Actions status](https://github.com/yallop/semantics-agda/workflows/basic/badge.svg)
 
 #### Acknowledgements

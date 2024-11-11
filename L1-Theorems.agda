@@ -243,3 +243,174 @@ _⊢_∶_?? : ∀ Γ e T → Dec (Γ ⊢ e ∶ T)
 Γ ⊢ e ∶ T ?? | yes ⟨ _  , t ⟩ | yes refl = yes t
 --                                      ... and uniqueness of typing
 Γ ⊢ e ∶ T ?? | yes ⟨ _  , t ⟩ | no ¬eq = no (λ { r → ¬eq (unique r t) })
+
+-----------------------------
+-- Congruence for Typed L1 --
+-----------------------------
+
+data Context : Set where
+  -[_]_ : Op → Expression → Context
+  _[_]- : (e : Expression) → {Value e} → Op → Context
+  _:=- : 𝕃 → Context
+  -؛_ _؛- While-Do_ While_Do- : Expression → Context
+  If-Then_Else_ If_Then-Else_ If_Then_Else- : Expression → Expression → Context
+
+_[_] : Context → Expression → Expression
+(-[ op ] e₂) [ e₁ ] = e₁ [ op ] e₂
+(e₁ [ op ]-) [ e₂ ] = e₁ [ op ] e₂
+ℓ :=- [ e ] = ℓ := e
+(-؛ e₂) [ e₁ ] = e₁ ؛ e₂
+(e₁ ؛-) [ e₂ ] = e₁ ؛ e₂
+(While-Do e₂) [ e₁ ] = While e₁ Do e₂
+While e₁ Do- [ e₂ ] = While e₁ Do e₂
+(If-Then e₂ Else e₃) [ e₁ ] = If e₁ Then e₂ Else e₃
+(If e₁ Then-Else e₃) [ e₂ ] = If e₁ Then e₂ Else e₃
+If e₁ Then e₂ Else- [ e₃ ] = If e₁ Then e₂ Else e₃
+
+record _→ω (c : Expression × Store) : Set where
+  coinductive
+  field
+     {c'} : Expression × Store
+     step₁ : c ⟶ c'
+     steps : c' →ω
+
+
+data EvaluationContext : Set where
+  -[_]_ : Op → Expression → EvaluationContext
+  _[_]- : (e : Expression) → {Value e} → Op → EvaluationContext
+  If-Then_Else_ : Expression → Expression → EvaluationContext
+  -؛_ : Expression → EvaluationContext
+  _:=- : 𝕃 → EvaluationContext
+
+_〚_〛 : EvaluationContext → Expression → Expression
+(-[ x ] x₁) 〚 e 〛 = e [ x ] x₁
+(e₁ [ x ]-) 〚 e 〛 = e₁ [ x ] e
+(If-Then x Else x₁) 〚 e 〛 = If e Then x Else x₁
+(-؛ x) 〚 e 〛 = e ؛ x
+(x :=-) 〚 e 〛 = x := e
+
+-- one-step evaluation lifts through evaluation contexts
+C[-] : ∀ {e e' s s'} → ∀ C → ⟨ e , s ⟩  ⟶ ⟨ e' , s' ⟩ → ⟨ C 〚 e 〛 , s ⟩ ⟶ ⟨ C 〚 e' 〛 , s' ⟩
+C[-] (-[ x ] x₁) r = op1 r
+C[-] (_[_]- e {v} x ) r = op2 v r
+C[-] (If-Then x Else x₁) r = if3 r
+C[-] (-؛ x) r = seq2 r
+C[-] (x :=-) r = assign2 r
+
+-- multi-step evaluation lifts through evaluation contexts
+C[-]⋆ : ∀ {e e' s s'} → ∀ C → ⟨ e , s ⟩  ⟶⋆ ⟨ e' , s' ⟩  → ⟨ C 〚 e 〛 , s ⟩ ⟶⋆ ⟨ C 〚 e' 〛 , s' ⟩
+C[-]⋆ C · = ·
+C[-]⋆ C (x then r) = C[-] C x then C[-]⋆ C r
+
+-- iterated preservation
+
+Preservation⋆ :  ∀ {Γ T e s e' s'} →
+   ⟨ e , s ⟩ ⟶⋆ ⟨ e' , s' ⟩ → Γ ⊢ e ∶ T → dom⊆ Γ s → Γ ⊢ e' ∶ T × dom⊆ Γ s'
+Preservation⋆ · ty doms = ⟨ ty , doms ⟩
+Preservation⋆ (x then r) ty doms = let ⟨ a , b ⟩ = Preservation x ty doms in Preservation⋆ r a b  
+
+-- finite prefix + nonterminating suffix = nonterminating
+⟶⋆∘ω : ∀ {e e' s s'} → ⟨ e , s ⟩ ⟶⋆ ⟨ e' , s' ⟩ → ⟨ e' , s' ⟩ →ω → ⟨ e , s ⟩ →ω
+⟶⋆∘ω · r' = r'
+⟶⋆∘ω (x then r) r' = record { step₁ = x ; steps = ⟶⋆∘ω r r' }
+
+-- nontermination lifts through evaluation contexts
+C[-]ω : ∀ C e s → ⟨ e , s ⟩  →ω → ⟨ C 〚 e 〛 , s ⟩ →ω
+_→ω.c' (C[-]ω (-[ x ] x₁) e s r) = let ⟨ e' , s' ⟩ = _→ω.c' r in ⟨ (e' [ x ] x₁) , s' ⟩
+_→ω.c' (C[-]ω (e₁ [ x ]-) e s r) = let ⟨ e' , s' ⟩ = _→ω.c' r in ⟨ e₁ [ x ] e' , s' ⟩
+_→ω.c' (C[-]ω (If-Then x Else x₁) e s r) = let ⟨ e' , s' ⟩ = _→ω.c' r in ⟨ If e' Then x Else x₁ , s' ⟩
+_→ω.c' (C[-]ω (-؛ x) e s r) =  let ⟨ e' , s' ⟩ = _→ω.c' r in ⟨ e' ؛ x , s' ⟩
+_→ω.c' (C[-]ω (x :=-) e s r) =  let ⟨ e' , s' ⟩ = _→ω.c' r in ⟨ x := e' , s' ⟩
+_→ω.step₁ (C[-]ω (-[ x ] x₁) e s r) = op1 (_→ω.step₁ r) 
+_→ω.step₁ (C[-]ω (_[_]- e₁ {v} x) e s r) = op2 v (_→ω.step₁ r)
+_→ω.step₁ (C[-]ω (If-Then x Else x₁) e s r) = if3 (_→ω.step₁ r)
+_→ω.step₁ (C[-]ω (-؛ x) e s r) = seq2 (_→ω.step₁ r)
+_→ω.step₁ (C[-]ω (x :=-) e s r) = assign2 (_→ω.step₁ r)
+_→ω.steps (C[-]ω C@(-[ x ] x₁) e s r) = record { step₁ = op1 (_→ω.step₁ (_→ω.steps r)) ; steps =  C[-]ω C _ _ (_→ω.steps (_→ω.steps r)) }
+_→ω.steps (C[-]ω C@(_[_]- e₁ {v} x) e s r) = record { step₁ = op2 v ((_→ω.step₁ (_→ω.steps r))) ; steps = C[-]ω C _ _ ((_→ω.steps (_→ω.steps r))) }
+_→ω.steps (C[-]ω C@(If-Then x Else x₁) e s r) = record { step₁ = if3 ((_→ω.step₁ (_→ω.steps r))) ; steps = C[-]ω C _ _ ((_→ω.steps (_→ω.steps r))) }
+_→ω.steps (C[-]ω C@(-؛ x) e s r) = record { step₁ = seq2 ((_→ω.step₁ (_→ω.steps r))) ; steps = C[-]ω C _ _ ((_→ω.steps (_→ω.steps r))) }
+_→ω.steps (C[-]ω C@(x :=-) e s r) = record { step₁ = assign2 ((_→ω.step₁ (_→ω.steps r))) ; steps = C[-]ω C _ _ ((_→ω.steps (_→ω.steps r))) }
+
+
+data _≡→_ (c₁ c₂ : Expression × Store) : Set where
+  non-terminating : (c₁ →ω) → (c₂ →ω) → c₁ ≡→ c₂
+  reducing : ∀ {v s'} → Value v →
+                        -- NB: both reduce to the same value (see slide 248) 
+                         c₁ ⟶⋆ ⟨ v , s' ⟩ →
+                         c₂ ⟶⋆ ⟨ v , s' ⟩ →
+                           c₁ ≡→ c₂
+
+refl-reducing : ∀ {c v s} → Value v → c ⟶⋆ ⟨ v , s ⟩ → c ≡→ c
+refl-reducing v c = reducing v c c
+
+refl-non-reducing : ∀ {c} → c →ω → c ≡→ c
+refl-non-reducing r = non-terminating r r
+
+≡→-refl : ∀ {e Γ s T} → dom⊆ Γ s → Γ ⊢ e ∶ T → ⟨ e , s ⟩ ≡→ ⟨ e , s ⟩
+≡→-refl {N x} doms ty = refl-reducing value-N ·
+≡→-refl {B x} doms ty = refl-reducing value-B ·
+≡→-refl {e [ x ] e₁} doms ty = {!!}
+≡→-refl {If e Then e₁ Else e₂} doms ty = {!!}
+≡→-refl {x := e} doms (assign x₁ ty) with ≡→-refl doms ty
+... | non-terminating x₂ x₃ = refl-non-reducing (C[-]ω (x :=-) _ _ x₂)
+... | reducing value x₃ x₄ = refl-reducing value-skip (C[-]⋆ ((x :=-)) x₄ ⟶⋆∘ ({!!} then ·))
+
+≡→-refl { ! x} doms (deref x₁) = refl-reducing value-N (deref {!!} then ·)
+≡→-refl {Skip} doms ty = refl-reducing value-skip ·
+≡→-refl {e ؛ e₁} doms (seq ty ty₁) with ≡→-refl {e} doms ty
+... | non-terminating x x₁ = refl-non-reducing (C[-]ω (-؛ e₁) e _ x)
+... | reducing x x₁ x₂ with ≡→-refl {e₁} doms ty₁ | Preservation⋆ x₁ ty doms
+... | non-terminating x₃ x₄  | ⟨ skip , s'' ⟩  = refl-non-reducing (⟶⋆∘ω (C[-]⋆ (-؛ e₁) x₁ ⟶⋆∘ (seq1 then ·)) x₃ )
+... | reducing x₃ x₄ x₅ | ⟨ skip , s'' ⟩  = refl-reducing x₃ (C[-]⋆ (-؛ e₁) x₁ ⟶⋆∘ (seq1 then x₄))
+≡→-refl {While e Do e₁} doms ty = {!!}
+
+_≃[_,_]_ : Expression → Type → TypeEnv → Expression → Set
+e₁ ≃[ T , Γ ] e₂ = ∀ s → dom⊆ Γ s →
+                    Γ ⊢ e₁ ∶ T
+                  × Γ ⊢ e₂ ∶ T
+                  × ⟨ e₁ , s ⟩ ≡→ ⟨ e₂ , s ⟩
+
+≃[]refl : ∀ {Γ c T} → Γ ⊢ c ∶ T → c ≃[ T , Γ ] c
+≃[]refl t s x = ⟨ t , ⟨ t , ≡→-refl x t ⟩ ⟩
+
+-- Theorem 29: Congruence for L1
+
+Congruence : ∀ {e₁ e₂ T Γ } → e₁ ≃[ T , Γ ] e₂ →
+             ∀ {C T'} →
+                Γ ⊢ C [ e₁ ] ∶ T' →
+                Γ ⊢ C [ e₂ ] ∶ T' →
+                (C [ e₁ ]) ≃[ T' , Γ ] (C [ e₂ ])
+Congruence {e₁} {e₂} {T} {Γ} eq {C} {T'} d1 d2 s d =  
+  let ⟨ _ , ⟨ _ , r ⟩ ⟩ = eq s d in
+  ⟨ d1 , ⟨ d2 , case C T' e₁ e₂ s d d1 d2 r  ⟩ ⟩
+  where case : ∀ C T' e₁ e₂ s (d : dom⊆ Γ s) → Γ ⊢ C [ e₁ ] ∶ T' → Γ ⊢ C [ e₂ ] ∶ T' → ⟨ e₁ , s ⟩ ≡→ ⟨ e₂ , s ⟩ → ⟨ C [ e₁ ] , s ⟩ ≡→ ⟨ C [ e₂ ] , s ⟩
+        case (-[ x ] x₁) T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = non-terminating (C[-]ω (-[ x ] x₁) _ _ x₂) (C[-]ω (-[ x ] x₁) _ _ x₃)
+        case (e [ x ]-) T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = {!!}
+        case (x :=-) T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = non-terminating (C[-]ω _ _ _ x₂) (C[-]ω _ _ _ x₃)
+        case (-؛ x) T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = non-terminating (C[-]ω _ _ _ x₂) (C[-]ω _ _ _ x₃)
+        case (x ؛-) T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = non-terminating {!!} {!!}
+        case (While-Do x) T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = {!!}
+        case While x Do- T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = {!!}
+        case (If-Then x Else x₁) T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = non-terminating (C[-]ω _ _ _ x₂) (C[-]ω _ _ _ x₃)
+        case (If x Then-Else x₁) T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = {!!}
+        case If x Then x₁ Else- T' e₁ e₂ s d d1 d2 (non-terminating x₂ x₃) = {!!}
+        case (-[ x ] x₁) T' e₁ e₂ s d d1 d2 (reducing x₂ x₃ x₄) = {!!}
+        --------------------------------------------------------------------------------
+        case (x [ x₁ ]-) T' e₁ e₂ s d d1 d2 r = {!!}
+        case C@(ℓ :=-) T' e₁ e₂ s d d1 d2 (reducing {v} {s'} x x₁ x₂) = {!!}
+        case (-؛ x) T' e₁ e₂ s d (seq d1 d3) (seq d2 d4) (reducing x₁ x₂ x₃) with Preservation⋆ x₂ d1 d | Preservation⋆ x₃ d2 d
+        ... | ⟨ skip , snd ⟩ | ⟨ skip , snd₁ ⟩ = 
+          let z = ≡→-refl d d3 in
+          {!!} 
+        case (x ؛-) T' e₁ e₂ s d d1 d2 (reducing x₁ x₂ x₃) = {!!}
+        case While x Do- T' e₁ e₂ s d d1 d2 (reducing x₁ x₂ x₃) = {!!}
+        case (While-Do x) T' e₁ e₂ s d d1 d2 (reducing x₁ x₂ x₃) = {!!}
+        case (If-Then x Else x₁) T' e₁ e₂ s d d1 d2 (reducing x₂ x₃ x₄) = {!!}
+        case (If x Then-Else x₁) T' e₁ e₂ s d d1 d2 (reducing x₂ x₃ x₄) = {!!}
+        case If x Then x₁ Else- T' e₁ e₂ s d d1 d2 (reducing x₂ x₃ x₄) = {!!}
+
+  -- assign2 : ∀ {ℓ e s e' s'} →
+  --      ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ →
+  --     --------------------------------
+  --      ⟨ ℓ := e , s ⟩ ⟶ ⟨ ℓ := e' , s' ⟩
