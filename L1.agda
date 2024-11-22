@@ -4,7 +4,7 @@ open import Data.Nat hiding (_+_)
 open import Data.Bool using (Bool; false; true)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.List using (List; []; _∷_)
-open import Data.Integer using (ℤ; 0ℤ; -1ℤ; +_) renaming (_+_ to _+ℤ_; _≤ᵇ_ to _≤ℤ_)
+open import Data.Integer using (ℤ; 0ℤ; -1ℤ; 1ℤ) renaming (_+_ to _+ℤ_; _≤ᵇ_ to _≤ℤ_; +_ to toℤ_)
 open import Data.Product using (Σ-syntax; ∃-syntax; _×_) renaming (_,_ to ⟨_,_⟩)
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
@@ -203,3 +203,25 @@ data _⊢_∶_ : TypeEnv → Expression → Type → Set where
      Γ ⊢ e₂ ∶ unit →
      ------------------------
      Γ ⊢ While e₁ Do e₂ ∶ unit
+
+store : Store
+store = just (toℤ 3)  ∷ just 0ℤ ∷ []
+
+ℓ₁ = zero
+ℓ₂ = suc zero
+
+
+-- step1 : ⟨ ℓ₂ := N 0ℤ ؛
+--           While ! ℓ₁ [ ≥ ] N (toℤ 1) 
+--             Do (ℓ₂ := ! ℓ₂ [ + ] ! ℓ₁ ؛ ℓ₁ := ! ℓ₁ [ + ] N -1ℤ) ,
+--           store ⟩ ⟶ ⟨ {!!} , store ⟩
+-- step1 = {!!}
+
+-- Γ : TypeEnv
+-- Γ zero = just intref
+-- Γ (suc zero) = just intref
+-- Γ (2+ ℓ) = nothing
+
+-- deriv : Γ ⊢ ℓ₂ := N (toℤ zero) ؛
+--                  While ! ℓ₁ [ ≥ ] N 1ℤ Do (ℓ₂ := ! ℓ₂ [ + ] ! ℓ₁ ؛ ℓ₁ := ! ℓ₁ [ + ] N -1ℤ) ∶ {!!}
+-- deriv = {!!}
