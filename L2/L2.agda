@@ -145,6 +145,14 @@ rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: 
 ↑ : Expression → Expression 
 ↑ = rename suc 
 
+≥2?+1 : ρ 
+≥2?+1 zero = zero
+≥2?+1 (suc zero) = suc zero
+≥2?+1 (2+ n) = suc (2+ n)
+
+≥2?↑ : Expression → Expression
+≥2?↑ = rename ≥2?+1
+
 shift : σ → ℕ → σ 
 shift s zero = s
 shift s (suc n) = (Var 0) ∷ map (↑) (shift s n)
@@ -248,7 +256,7 @@ data _⟶_ : Expression × Store → Expression × Store → Set where
   fn : ∀ { v e s T } → 
       Value v →
       ----------------------------------
-      ⟨ Fn: T ⇒ e ＠ v , s ⟩ ⟶ ⟨ (subst (v ∷ []) e) , s ⟩
+      ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ (subst (v ∷ []) e) , s ⟩
 
   let1 :  ∀ { e₁ e₂ e₁' s s' T } → 
     ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ → 
@@ -257,7 +265,7 @@ data _⟶_ : Expression × Store → Expression × Store → Set where
 
   letrecfn : ∀ { e₁ e₂ s T₁ T₂ } → 
     ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶ 
-    ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ (↑ (↑ e₁)) ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
+    ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
 
   
 data _⟶⋆_ : Expression × Store → Expression × Store → Set where
