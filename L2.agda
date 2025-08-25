@@ -114,3 +114,176 @@ _!!_ : Store → 𝕃 → Maybe ℤ
 (v ∷ _) !! zero = v
 (_ ∷ s) !! suc ℓ = s !! ℓ
  
+--  Substitution
+σ = List Expression
+
+lookup : σ → 𝕏 → Maybe (Expression)
+lookup [] x = nothing
+lookup (y ∷ es) zero = just y
+lookup (y ∷ es) (suc n) = lookup es n
+
+ρ : Set 
+ρ = 𝕏 → 𝕏
+
+rename : ρ → Expression → Expression 
+rename r (N n) = N n
+rename r (B b) = B b
+rename r (e₁ [ op ] e₂) = (rename r e₁) [ op ] (rename r e₂)
+rename r (If e₁ Then e₂ Else e₃) = If (rename r e₁) Then (rename r e₂) Else (rename r e₃)
+rename r (l := e) = l := (rename r e)
+rename r (! l) = ! l
+rename r Skip = Skip
+rename r (e₁ ⨾ e₂) = (rename r e₁) ⨾ (rename r e₂)
+rename r (While e₁ Do e₂) = While (rename r e₁) Do (rename r e₂)
+rename r (e₁ ＠ e₂) = (rename r e₁) ＠ (rename r e₂)
+rename r (Fn: T ⇒ e) = Fn: T ⇒ (rename r e)
+rename r (Var x) = Var (r x)
+rename r (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ (rename r e₁) In (rename r e₂)
+rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ (rename r e₁) ]In (rename r e₂)
+
+↑ : Expression → Expression 
+↑ = rename suc 
+
+≥2?+1 : ρ 
+≥2?+1 zero = zero
+≥2?+1 (suc zero) = suc zero
+≥2?+1 (2+ n) = suc (2+ n)
+
+≥2?↑ : Expression → Expression
+≥2?↑ = rename ≥2?+1
+
+shift : σ → ℕ → σ 
+shift s zero = s
+shift s (suc n) = (Var 0) ∷ map (↑) (shift s n)
+
+⇑ : σ → σ 
+⇑ s = shift s 1
+
+swap : ρ 
+swap zero = suc (zero)
+swap (suc zero) = zero
+swap (2+ n) = 2+ n
+
+⇄ : Expression → Expression
+⇄ e = rename swap e
+
+
+subst :  σ → Expression → Expression
+subst s (N n) = N n
+subst s (B b) = B b
+subst s (e₁ [ op ] e₂) = (subst s e₁) [ op ] (subst s e₂)
+subst s (If e₁ Then e₂ Else e₃) = If (subst s e₁) Then (subst s e₂) Else (subst s e₃)
+subst s (l := e) = l := (subst s e)
+subst s (! l) = ! l
+subst s Skip = Skip
+subst s (e₁ ⨾ e₂) = (subst s e₁) ⨾ (subst s e₂) 
+subst s (While e₁ Do e₂) = While (subst s e₁) Do (subst s e₂)
+subst s (e₁ ＠ e₂) = (subst s e₁) ＠ (subst s e₂)
+subst s (Fn: T ⇒ e) = Fn: T ⇒ subst (⇑ s) e
+subst s (Var x) with lookup s x 
+... | just e = e
+... | nothing = Var x
+subst s (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ subst s e₁ In subst (⇑ s) e₂
+subst s (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ subst (⇑ (⇑ s)) e₁ ]In subst (⇑ s) e₂
+
+-- Operational Semantics
+data _⟶_ : Expression × Store → Expression × Store → Set where
+
+  op+ : ∀ {n₁ n₂ s} →
+        ⟨ N n₁ [ + ] N n₂ , s ⟩ ⟶ ⟨ N (n₁ +ℤ n₂) , s ⟩
+
+  op≥ : ∀ {n₁ n₂ s} →
+        ⟨ N n₁ [ ≥ ] N n₂ , s ⟩ ⟶ ⟨ B (n₂ ≤ℤ n₁) , s ⟩
+
+  op1 : ∀ {e₁ op e₂ s e₁' s'} →
+       ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩  →
+       ------------------------------------------
+       ⟨ e₁ [ op ] e₂ , s ⟩ ⟶ ⟨ e₁' [ op ] e₂ , s' ⟩
+
+  op2 : ∀ {v e₂ s e₂' s' op} →
+       Value v →
+       ⟨ e₂ , s ⟩ ⟶ ⟨ e₂' , s' ⟩  →
+       ------------------------------------------
+       ⟨ v [ op ] e₂ , s ⟩ ⟶ ⟨ v [ op ] e₂' , s' ⟩
+
+  deref : ∀ {ℓ n s} →
+       (s !! ℓ ≡ just n) →
+       ⟨ ! ℓ , s ⟩ ⟶ ⟨ N n , s ⟩
+
+  assign1 : ∀ {ℓ m n s} →
+       s !! ℓ ≡ just m →
+       ⟨ ℓ := N n , s ⟩ ⟶ ⟨ Skip , s ⨄ (ℓ ↦ n) ⟩
+
+  assign2 : ∀ {ℓ e s e' s'} →
+       ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ →
+      --------------------------------
+       ⟨ ℓ := e , s ⟩ ⟶ ⟨ ℓ := e' , s' ⟩
+
+  seq1 : ∀ {e₂ s} →
+       ⟨ Skip ⨾ e₂ , s ⟩ ⟶ ⟨ e₂ , s ⟩
+
+  seq2 : ∀ {e₁ e₂ s e₁' s'} →
+       ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ →
+      --------------------------------
+       ⟨ e₁ ⨾ e₂ , s ⟩ ⟶ ⟨ e₁' ⨾ e₂ , s' ⟩
+
+  if1 : ∀ {e₂ e₃ s} →
+      ⟨ If B true Then e₂ Else e₃ , s ⟩ ⟶ ⟨ e₂ , s ⟩
+
+  if2 : ∀ {e₂ e₃ s} →
+      ⟨ If B false Then e₂ Else e₃ , s ⟩ ⟶ ⟨ e₃ , s ⟩
+
+  if3 : ∀ {e₁ e₂ e₃ s e₁' s'} →
+      ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ →
+      -----------------------------------------------------------
+      ⟨ If e₁ Then e₂ Else e₃ , s ⟩ ⟶ ⟨ If e₁' Then e₂ Else e₃ , s' ⟩
+
+  while : ∀ {e₁ e₂ s} →
+      ⟨ While e₁ Do e₂ , s ⟩ ⟶ ⟨ If e₁ Then (e₂ ⨾ (While e₁ Do e₂)) Else Skip , s ⟩
+  
+  app1 : ∀ { e₁ e₂ e₁' s s' } → 
+      ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ → 
+      ----------------------------------
+      ⟨ e₁ ＠ e₂ , s ⟩ ⟶ ⟨ e₁' ＠ e₂ , s' ⟩
+
+  app2 : ∀ { v e₂ e₂' s s' } → 
+      Value v →
+      ⟨ e₂ , s ⟩ ⟶ ⟨ e₂' , s' ⟩ → 
+      ----------------------------------
+      ⟨ v ＠ e₂ , s ⟩ ⟶ ⟨ v ＠ e₂' , s' ⟩
+
+  fn : ∀ { v e s T } → 
+      Value v →
+      ----------------------------------
+      ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ (subst (v ∷ []) e) , s ⟩
+
+  let1 :  ∀ { e₁ e₂ e₁' s s' T } → 
+    ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ → 
+    -------------------------------
+    ⟨ LetVal: T ≔ e₁ In e₂ , s ⟩ ⟶ ⟨ LetVal: T ≔ e₁' In e₂ , s' ⟩
+
+  let2 :  ∀ { v e s T } → 
+    Value v → 
+    -------------------------------
+    ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
+
+  letrecfn : ∀ { e₁ e₂ s T₁ T₂ } → 
+    ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶ 
+    ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
+
+  
+data _⟶⋆_ : Expression × Store → Expression × Store → Set where
+  · : ∀ {e s} → ⟨ e , s ⟩ ⟶⋆ ⟨ e , s ⟩
+  _then_ : ∀ {e s e' s' e'' s''} →
+          ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ →
+          ⟨ e' , s' ⟩ ⟶⋆ ⟨ e'' , s'' ⟩ →
+          ⟨ e , s ⟩ ⟶⋆ ⟨ e'' , s'' ⟩
+
+_⟶⋆∘_ : ∀ {e₁ e₂ e₃ s₁ s₂ s₃} →
+       ⟨ e₁ , s₁ ⟩ ⟶⋆ ⟨ e₂ , s₂ ⟩ →
+       ⟨ e₂ , s₂ ⟩ ⟶⋆ ⟨ e₃ , s₃ ⟩ →
+       ⟨ e₁ , s₁ ⟩ ⟶⋆ ⟨ e₃ , s₃ ⟩
+· ⟶⋆∘ r = r
+(r then rs) ⟶⋆∘ rs' = r then (rs ⟶⋆∘ rs') 
+
+infixr 5 _then_
