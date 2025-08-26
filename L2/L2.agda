@@ -263,6 +263,11 @@ data _⟶_ : Expression × Store → Expression × Store → Set where
     -------------------------------
     ⟨ LetVal: T ≔ e₁ In e₂ , s ⟩ ⟶ ⟨ LetVal: T ≔ e₁' In e₂ , s' ⟩
 
+  let2 :  ∀ { v e s T } → 
+    Value v → 
+    -------------------------------
+    ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
+
   letrecfn : ∀ { e₁ e₂ s T₁ T₂ } → 
     ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶ 
     ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
