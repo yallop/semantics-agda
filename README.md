@@ -8,5 +8,6 @@ based on the [course lecture notes](https://www.cl.cam.ac.uk/teaching/2324/Seman
 
 #### Acknowledgements
 
-Thanks to Jacob Bennett-Woolf for contributions to --exact-split
-support and precedence/associativity.
+Thanks to
+- Jacob Bennett-Woolf for contributions to --exact-split support and precedence/associativity.
+- Michael Lee for the L2 mechanisation
