@@ -16,3 +16,4 @@ jobs:
           agda-stdlib-version: 'recommended'
 
       - run: agda -c -i $HOME/.agda/libraries.d/standard-library/v2.0/src L1-Theorems.agda
+      - run: agda -c -i $HOME/.agda/libraries.d/standard-library/v2.0/src L2-Examples.agda
