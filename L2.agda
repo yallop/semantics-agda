@@ -297,6 +297,9 @@ StoreEnv = 𝕃 → Maybe Tloc
 TypeEnv : Set
 TypeEnv = 𝕏 → Maybe Type
 
+• : TypeEnv
+• = λ {n → nothing}
+
 _,_ : TypeEnv → Type → TypeEnv
 Γ , T = λ { zero → just T; (suc n) → Γ (n) }
 
