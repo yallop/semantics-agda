@@ -17,17 +17,17 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans
 data Op : Set where
   + ≥ : Op
 
--- Types 
+-- Types
 data Type : Set where
   int bool unit : Type
   _➝_ : Type → Type → Type
 
-infixr 20 _➝_ 
+infixr 20 _➝_
 
-➝-t₂-injective : ∀ { t₁ t₂ t₁' t₂'} → (t₁ ➝ t₂) ≡ (t₁' ➝ t₂') → t₂ ≡ t₂' 
+➝-t₂-injective : ∀ { t₁ t₂ t₁' t₂'} → (t₁ ➝ t₂) ≡ (t₁' ➝ t₂') → t₂ ≡ t₂'
 ➝-t₂-injective refl = refl
 
-➝-t₁-injective : ∀ { t₁ t₂ t₁' t₂'} → (t₁ ➝ t₂) ≡ (t₁' ➝ t₂') → t₁ ≡ t₁' 
+➝-t₁-injective : ∀ { t₁ t₂ t₁' t₂'} → (t₁ ➝ t₂) ≡ (t₁' ➝ t₂') → t₁ ≡ t₁'
 ➝-t₁-injective refl = refl
 
 ≡-type : (x y : Type) → Dec (x ≡ y)
@@ -72,7 +72,7 @@ data Expression : Set where
   LetVal:_≔_In_ : Type → Expression → Expression → Expression
   LetValRec:_➝_≔[Fn:_⇒_]In_ : Type → Type → Type → Expression → Expression → Expression
 
-infixl 60 _＠_ 
+infixl 60 _＠_
 infix 50 !_
 infix 50 Var_
 infix 40 _[_]_
@@ -90,7 +90,7 @@ data Value : Expression → Set where
   value-skip : Value Skip
   value-Fn : ∀ {T e} → Value (Fn: T ⇒ e)
 
--- Store 
+-- Store
 Store : Set
 Store = List (Maybe ℤ)
 
@@ -113,7 +113,7 @@ _!!_ : Store → 𝕃 → Maybe ℤ
 [] !! ℓ = nothing
 (v ∷ _) !! zero = v
 (_ ∷ s) !! suc ℓ = s !! ℓ
- 
+
 --  Substitution
 σ = List Expression
 
@@ -122,10 +122,10 @@ lookup [] x = nothing
 lookup (y ∷ es) zero = just y
 lookup (y ∷ es) (suc n) = lookup es n
 
-ρ : Set 
+ρ : Set
 ρ = 𝕏 → 𝕏
 
-rename : ρ → Expression → Expression 
+rename : ρ → Expression → Expression
 rename r (N n) = N n
 rename r (B b) = B b
 rename r (e₁ [ op ] e₂) = (rename r e₁) [ op ] (rename r e₂)
@@ -141,10 +141,10 @@ rename r (Var x) = Var (r x)
 rename r (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ (rename r e₁) In (rename r e₂)
 rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ (rename r e₁) ]In (rename r e₂)
 
-↑ : Expression → Expression 
-↑ = rename suc 
+↑ : Expression → Expression
+↑ = rename suc
 
-≥2?+1 : ρ 
+≥2?+1 : ρ
 ≥2?+1 zero = zero
 ≥2?+1 (suc zero) = suc zero
 ≥2?+1 (2+ n) = suc (2+ n)
@@ -152,14 +152,14 @@ rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: 
 ≥2?↑ : Expression → Expression
 ≥2?↑ = rename ≥2?+1
 
-shift : σ → ℕ → σ 
+shift : σ → ℕ → σ
 shift s zero = s
 shift s (suc n) = (Var 0) ∷ map (↑) (shift s n)
 
-⇑ : σ → σ 
+⇑ : σ → σ
 ⇑ s = shift s 1
 
-swap : ρ 
+swap : ρ
 swap zero = suc (zero)
 swap (suc zero) = zero
 swap (2+ n) = 2+ n
@@ -176,11 +176,11 @@ subst s (If e₁ Then e₂ Else e₃) = If (subst s e₁) Then (subst s e₂) El
 subst s (l := e) = l := (subst s e)
 subst s (! l) = ! l
 subst s Skip = Skip
-subst s (e₁ ⨾ e₂) = (subst s e₁) ⨾ (subst s e₂) 
+subst s (e₁ ⨾ e₂) = (subst s e₁) ⨾ (subst s e₂)
 subst s (While e₁ Do e₂) = While (subst s e₁) Do (subst s e₂)
 subst s (e₁ ＠ e₂) = (subst s e₁) ＠ (subst s e₂)
 subst s (Fn: T ⇒ e) = Fn: T ⇒ subst (⇑ s) e
-subst s (Var x) with lookup s x 
+subst s (Var x) with lookup s x
 ... | just e = e
 ... | nothing = Var x
 subst s (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ subst s e₁ In subst (⇑ s) e₂
@@ -240,38 +240,38 @@ data _⟶_ : Expression × Store → Expression × Store → Set where
 
   while : ∀ {e₁ e₂ s} →
       ⟨ While e₁ Do e₂ , s ⟩ ⟶ ⟨ If e₁ Then (e₂ ⨾ (While e₁ Do e₂)) Else Skip , s ⟩
-  
-  app1 : ∀ { e₁ e₂ e₁' s s' } → 
-      ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ → 
+
+  app1 : ∀ { e₁ e₂ e₁' s s' } →
+      ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ →
       ----------------------------------
       ⟨ e₁ ＠ e₂ , s ⟩ ⟶ ⟨ e₁' ＠ e₂ , s' ⟩
 
-  app2 : ∀ { v e₂ e₂' s s' } → 
+  app2 : ∀ { v e₂ e₂' s s' } →
       Value v →
-      ⟨ e₂ , s ⟩ ⟶ ⟨ e₂' , s' ⟩ → 
+      ⟨ e₂ , s ⟩ ⟶ ⟨ e₂' , s' ⟩ →
       ----------------------------------
       ⟨ v ＠ e₂ , s ⟩ ⟶ ⟨ v ＠ e₂' , s' ⟩
 
-  fn : ∀ { v e s T } → 
+  fn : ∀ { v e s T } →
       Value v →
       ----------------------------------
       ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ (subst (v ∷ []) e) , s ⟩
 
-  let1 :  ∀ { e₁ e₂ e₁' s s' T } → 
-    ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ → 
+  let1 :  ∀ { e₁ e₂ e₁' s s' T } →
+    ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ →
     -------------------------------
     ⟨ LetVal: T ≔ e₁ In e₂ , s ⟩ ⟶ ⟨ LetVal: T ≔ e₁' In e₂ , s' ⟩
 
-  let2 :  ∀ { v e s T } → 
-    Value v → 
+  let2 :  ∀ { v e s T } →
+    Value v →
     -------------------------------
     ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
 
-  letrecfn : ∀ { e₁ e₂ s T₁ T₂ } → 
-    ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶ 
+  letrecfn : ∀ { e₁ e₂ s T₁ T₂ } →
+    ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶
     ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
 
-  
+
 data _⟶⋆_ : Expression × Store → Expression × Store → Set where
   · : ∀ {e s} → ⟨ e , s ⟩ ⟶⋆ ⟨ e , s ⟩
   _then_ : ∀ {e s e' s' e'' s''} →
@@ -284,6 +284,104 @@ _⟶⋆∘_ : ∀ {e₁ e₂ e₃ s₁ s₂ s₃} →
        ⟨ e₂ , s₂ ⟩ ⟶⋆ ⟨ e₃ , s₃ ⟩ →
        ⟨ e₁ , s₁ ⟩ ⟶⋆ ⟨ e₃ , s₃ ⟩
 · ⟶⋆∘ r = r
-(r then rs) ⟶⋆∘ rs' = r then (rs ⟶⋆∘ rs') 
+(r then rs) ⟶⋆∘ rs' = r then (rs ⟶⋆∘ rs')
 
 infixr 5 _then_
+
+data Tloc : Set where
+  intref : Tloc
+
+StoreEnv : Set
+StoreEnv = 𝕃 → Maybe Tloc
+
+TypeEnv : Set
+TypeEnv = 𝕏 → Maybe Type
+
+• : TypeEnv
+• = λ {n → nothing}
+
+_,_ : TypeEnv → Type → TypeEnv
+Γ , T = λ { zero → just T; (suc n) → Γ (n) }
+
+infixl 5 _,_
+
+data _⨾_⊢_∶_ : StoreEnv → TypeEnv → Expression → Type → Set where
+  int : ∀ { Σ Γ n} →
+      Σ ⨾ Γ ⊢ N n ∶ int
+
+  bool : ∀ { Σ Γ b } →
+      Σ ⨾ Γ ⊢ B b ∶ bool
+
+  op+ : ∀ { Σ Γ e₁ e₂ } →
+     Σ ⨾ Γ ⊢ e₁ ∶ int →
+     Σ ⨾ Γ ⊢ e₂ ∶ int →
+     --------------------
+     Σ ⨾ Γ ⊢ e₁ [ + ] e₂ ∶ int
+
+  op≥ : ∀ { Σ Γ e₁ e₂ } →
+     Σ ⨾ Γ ⊢ e₁ ∶ int →
+     Σ ⨾ Γ ⊢ e₂ ∶ int →
+     ---------------------
+     Σ ⨾ Γ ⊢ e₁ [ ≥ ] e₂ ∶ bool
+
+  if : ∀ { Σ Γ e₁ e₂ e₃ T } →
+     Σ ⨾ Γ ⊢ e₁ ∶ bool →
+     Σ ⨾ Γ ⊢ e₂ ∶ T →
+     Σ ⨾ Γ ⊢ e₃ ∶ T →
+     -------------------------------
+     Σ ⨾ Γ ⊢ If e₁ Then e₂ Else e₃ ∶ T
+
+  assign : ∀ { Σ Γ ℓ e } →
+     Σ (ℓ) ≡ just intref →
+     Σ ⨾ Γ ⊢ e ∶ int →
+     -----------------
+     Σ ⨾ Γ ⊢ ℓ := e ∶ unit
+
+  deref : ∀ { Σ Γ ℓ } →
+     Σ (ℓ) ≡ just intref →
+     -------------------
+     Σ ⨾ Γ ⊢ ! ℓ ∶ int
+
+  skip : ∀ { Σ Γ } →
+     Σ ⨾ Γ ⊢ Skip ∶ unit
+
+  seq : ∀ { Σ Γ e₁ e₂ T } →
+     Σ ⨾ Γ ⊢ e₁ ∶ unit →
+     Σ ⨾ Γ ⊢ e₂ ∶ T →
+     --------------
+     Σ ⨾ Γ ⊢ e₁ ⨾ e₂ ∶ T
+
+  while : ∀ { Σ Γ e₁ e₂} →
+     Σ ⨾ Γ ⊢ e₁ ∶ bool →
+     Σ ⨾ Γ ⊢ e₂ ∶ unit →
+     ------------------------
+     Σ ⨾ Γ ⊢ While e₁ Do e₂ ∶ unit
+
+  var : ∀ { Σ Γ x T } →
+    Γ ( x ) ≡ just T →
+    ------------------------
+    Σ ⨾ Γ ⊢ Var x ∶ T
+
+  fn : ∀ { Σ Γ T₁ T₂ e } →
+    Σ ⨾ (Γ , T₁) ⊢ e ∶ T₂ →
+    ------------------------
+    Σ ⨾ Γ ⊢ (Fn: T₁ ⇒ e) ∶ (T₁ ➝ T₂)
+
+  app : ∀ { Σ Γ T₁ T₂ e₁ e₂ } →
+    Σ ⨾ Γ ⊢ e₁ ∶ (T₁ ➝ T₂) →
+    Σ ⨾ Γ ⊢ e₂ ∶ T₁ →
+    ------------------------
+    Σ ⨾ Γ ⊢ e₁ ＠ e₂ ∶ T₂
+
+  letval : ∀ { Σ Γ T₁ T₂ e₁ e₂ } → -- This corresponds to the "let" rule in the notes,
+                                   -- Naming restrictions prevent me from naming it such
+    Σ ⨾ Γ ⊢ e₁ ∶ T₁ →
+    Σ ⨾ ( Γ , T₁ ) ⊢ e₂ ∶ T₂ →
+    ------------------------
+    Σ ⨾ Γ ⊢ LetVal: T₁ ≔ e₁ In e₂ ∶ T₂
+
+  letrecfn : ∀ { Σ Γ T₁ T₂ T e₁ e₂ } →
+    Σ ⨾ ( (Γ , ( T₁ ➝ T₂ ), T₁)) ⊢ e₁ ∶ T₂ →
+    Σ ⨾ ( Γ , ( T₁ ➝ T₂ ) ) ⊢ e₂ ∶ T →
+    ------------------------
+    Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ ∶ T
