@@ -15,3 +15,4 @@ jobs:
           agda-version: '2.6.4.1'
           agda-stdlib-version: 'recommended'
       - run: agda -c -i $HOME/.agda/libraries.d/standard-library/v2.0/src L2-Examples.agda
+      
