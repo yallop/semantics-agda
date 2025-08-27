@@ -1,0 +1,18 @@
+name: check-l2
+on:
+  - pull_request
+  - push
+  - workflow_dispatch
+jobs:
+  check-l2-examples:
+    name: Check L2 Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: wenkokke/setup-agda@v2
+        with:
+          agda-version: '2.6.4.1'
+          agda-stdlib-version: 'recommended'
+      - run: agda -c -i $HOME/.agda/libraries.d/standard-library/v2.0/src L2-Examples.agda
+      

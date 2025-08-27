@@ -1,11 +1,11 @@
-name: basic
+name: check-l1
 on:
   - pull_request
   - push
   - workflow_dispatch
 jobs:
-  check:
-    name: Check L1.agda
+  check-l1-theorems:
+    name: Check L1 Theorems
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -16,4 +16,4 @@ jobs:
           agda-stdlib-version: 'recommended'
 
       - run: agda -c -i $HOME/.agda/libraries.d/standard-library/v2.0/src L1-Theorems.agda
-      - run: agda -c -i $HOME/.agda/libraries.d/standard-library/v2.0/src L2-Examples.agda
+
