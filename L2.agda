@@ -294,16 +294,13 @@ data Tloc : Set where
 StoreEnv : Set
 StoreEnv = 𝕃 → Maybe Tloc
 
-data TypeEnv : Set where
-  · : TypeEnv
-  _,_ : TypeEnv → Type → TypeEnv
+TypeEnv : Set
+TypeEnv = 𝕏 → Maybe Type
+
+_,_ : TypeEnv → Type → TypeEnv
+Γ , T = λ { zero → just T; (suc n) → Γ (n) }
 
 infixl 5 _,_
-
-lookupType : TypeEnv → 𝕏 → Maybe Type
-lookupType · x = nothing
-lookupType (Γ , T) zero = just T
-lookupType (Γ , T) (suc x) = lookupType Γ x
 
 data _⨾_⊢_∶_ : StoreEnv → TypeEnv → Expression → Type → Set where
   int : ∀ { Σ Γ n} →
@@ -358,7 +355,7 @@ data _⨾_⊢_∶_ : StoreEnv → TypeEnv → Expression → Type → Set where
      Σ ⨾ Γ ⊢ While e₁ Do e₂ ∶ unit
 
   var : ∀ { Σ Γ x T } →
-    lookupType Γ x ≡ just T →
+    Γ ( x ) ≡ just T →
     ------------------------
     Σ ⨾ Γ ⊢ Var x ∶ T
 
