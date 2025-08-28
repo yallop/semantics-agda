@@ -41,3 +41,104 @@ structural-induction k (Fn: T ⇒ e) = k (Fn: T ⇒ (structural-induction k e))
 structural-induction k (Var x) = k (Var x)
 structural-induction k (LetVal: T ≔ e₁ In e₂) = k (LetVal: T ≔ (structural-induction k e₁) In (structural-induction k e₂))
 structural-induction k (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = k (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ (structural-induction k e₁) ]In (structural-induction k e₂))
+
+data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv → TypeEnv → Expression → Type → Set where
+  int : ∀ {Σ Γ n} →
+      IH P at Σ ⨾ Γ ⊢ N n ∶ int
+
+  bool : ∀ {Σ Γ b} →
+      IH P at Σ ⨾ Γ ⊢ B b ∶ bool
+
+  op+ : ∀ {Σ Γ e₁ e₂} →
+     P Γ e₁ int →
+     P Γ e₂ int →
+     --------------------
+     IH P at Σ ⨾ Γ ⊢ e₁ [ + ] e₂ ∶ int
+
+  op≥ : ∀ {Σ Γ e₁ e₂} →
+     P Γ e₁ int →
+     P Γ e₂ int →
+     ---------------------
+     IH P at Σ ⨾ Γ ⊢ e₁ [ ≥ ] e₂ ∶ bool
+
+  if : ∀ {Σ Γ e₁ e₂ e₃ T} →
+     P Γ e₁ bool →
+     P Γ e₂ T →
+     P Γ e₃ T →
+     -------------------------------
+     IH P at Σ ⨾ Γ ⊢ If e₁ Then e₂ Else e₃ ∶ T
+
+  assign : ∀ {Σ Γ ℓ e} →
+     Σ (ℓ) ≡ just intref →
+     P Γ e int →
+     -----------------
+     IH P at Σ ⨾ Γ ⊢ ℓ := e ∶ unit
+
+  deref : ∀ {Σ Γ ℓ} →
+     Σ (ℓ) ≡ just intref →
+     -------------------
+     IH P at Σ ⨾ Γ ⊢ ! ℓ ∶ int
+
+  skip : ∀ {Σ Γ} →
+     IH P at Σ ⨾ Γ ⊢ Skip ∶ unit
+
+  seq : ∀ {Σ Γ e₁ e₂ T} →
+     P Γ e₁ unit →
+     P Γ e₂ T →
+     --------------
+     IH P at Σ ⨾ Γ ⊢ e₁ ⨾ e₂ ∶ T
+
+  while : ∀ {Σ Γ e₁ e₂} →
+     P Γ e₁ bool →
+     P Γ e₂ unit →
+     ------------------------
+     IH P at Σ ⨾ Γ ⊢ While e₁ Do e₂ ∶ unit
+
+  var : ∀ { Σ Γ x T } →
+    Γ ( x ) ≡ just T →
+    ------------------------
+    IH P at Σ ⨾ Γ ⊢ Var x ∶ T
+
+  fn : ∀ { Σ Γ T₁ T₂ e } →
+    P (Γ , T₁) e T₂ →
+    ------------------------
+    IH P at Σ ⨾ Γ ⊢ (Fn: T₁ ⇒ e) ∶ (T₁ ➝ T₂)
+
+  app : ∀ { Σ Γ T₁ T₂ e₁ e₂ } →
+    P Γ e₁ (T₁ ➝ T₂) →
+    P Γ e₂ T₁ →
+    ------------------------
+    IH P at Σ ⨾ Γ ⊢ e₁ ＠ e₂ ∶ T₂
+
+  letval : ∀ { Σ Γ T₁ T₂ e₁ e₂ } →
+    P Γ e₁ T₁ →
+    P (Γ , T₁) e₂ T₂ →
+    ------------------------
+    IH P at Σ ⨾ Γ ⊢ LetVal: T₁ ≔ e₁ In e₂ ∶ T₂
+
+  letrecfn : ∀ { Σ Γ T₁ T₂ T e₁ e₂ } →
+    P (Γ , ( T₁ ➝ T₂ ), T₁) e₁ T₂ →
+    P ( Γ , ( T₁ ➝ T₂ ) ) e₂ T →
+    ------------------------
+    IH P at Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ ∶ T
+
+⊢-induction : ∀ {Σ Γ e T} →
+    ∀ {P : TypeEnv → Expression → Type → Set} →
+    (∀ {Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → IH P at Σ ⨾ Γ ⊢ e ∶ T → P Γ e T) →
+    (Σ ⨾ Γ ⊢ e ∶ T) →
+    P Γ e T
+⊢-induction k te@int = k te int      -- te stands for typed expression, is an alias for int
+⊢-induction k te@bool = k te bool
+⊢-induction k te@(op+ e₁ e₂) = k te (op+ (⊢-induction k e₁) (⊢-induction k e₂))
+⊢-induction k te@(op≥ e₁ e₂) = k te (op≥ (⊢-induction k e₁) (⊢-induction k e₂))
+⊢-induction k te@(if e₁ e₂ e₃) = k te (if (⊢-induction k e₁) (⊢-induction k e₂) (⊢-induction k e₃))
+⊢-induction k te@(assign l e) = k te (assign l (⊢-induction k e))
+⊢-induction k te@(deref l) = k te (deref l)
+⊢-induction k te@skip = k te skip
+⊢-induction k te@(seq e₁ e₂) = k te (seq (⊢-induction k e₁) (⊢-induction k e₂))
+⊢-induction k te@(while e₁ e₂) = k te (while (⊢-induction k e₁) (⊢-induction k e₂))
+⊢-induction k te@(var x) = k te (var x)
+⊢-induction k te@(fn e) = k te (fn (⊢-induction k e))
+⊢-induction k te@(app e₁ e₂) = k te (app (⊢-induction k e₁) (⊢-induction k e₂))
+⊢-induction k te@(letval e₁ e₂) = k te (letval (⊢-induction k e₁) (⊢-induction k e₂))
+⊢-induction k te@(letrecfn e₁ e₂) = k te (letrecfn (⊢-induction k e₁) (⊢-induction k e₂))
