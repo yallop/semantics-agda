@@ -4,6 +4,7 @@ open import Data.Bool using (Bool; false; true)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Integer using (ℤ; 0ℤ; -1ℤ; +_) renaming (_+_ to _+ℤ_; _≤ᵇ_ to _≤ℤ_)
 open import Data.Product using (Σ-syntax; ∃-syntax; _×_) renaming (_,_ to ⟨_,_⟩)
+open import Data.List using ([]; _∷_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
 
 open import L2
@@ -142,3 +143,113 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
 ⊢-induction k te@(app e₁ e₂) = k te (app (⊢-induction k e₁) (⊢-induction k e₂))
 ⊢-induction k te@(letval e₁ e₂) = k te (letval (⊢-induction k e₁) (⊢-induction k e₂))
 ⊢-induction k te@(letrecfn e₁ e₂) = k te (letrecfn (⊢-induction k e₁) (⊢-induction k e₂))
+
+data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
+                   : Expression × Store → Expression × Store → Set where
+
+  op+ : ∀ {n₁ n₂ s} →
+        IH P at ⟨ N n₁ [ + ] N n₂ , s ⟩ ⟶ ⟨ N (n₁ +ℤ n₂) , s ⟩
+
+  op≥ : ∀ {n₁ n₂ s} →
+        IH P at ⟨ N n₁ [ ≥ ] N n₂ , s ⟩ ⟶ ⟨ B (n₂ ≤ℤ n₁) , s ⟩
+
+  op1 : ∀ {e₁ op e₂ s e₁' s'} →
+       P ⟨ e₁ , s ⟩ ⟨ e₁' , s' ⟩  →
+       ------------------------------------------
+       IH P at ⟨ e₁ [ op ] e₂ , s ⟩ ⟶ ⟨ e₁' [ op ] e₂ , s' ⟩
+
+  op2 : ∀ {v e₂ s e₂' s' op} →
+       Value v →
+       P ⟨ e₂ , s ⟩ ⟨ e₂' , s' ⟩  →
+       ------------------------------------------
+       IH P at ⟨ v [ op ] e₂ , s ⟩ ⟶ ⟨ v [ op ] e₂' , s' ⟩
+
+  deref : ∀ {ℓ n s} →
+       (s !! ℓ ≡ just n) →
+       IH P at ⟨ ! ℓ , s ⟩ ⟶ ⟨ N n , s ⟩
+
+  assign1 : ∀ {ℓ m n s} →
+       s !! ℓ ≡ just m →
+       IH P at ⟨ ℓ := N n , s ⟩ ⟶ ⟨ Skip , s ⨄ (ℓ ↦ n) ⟩
+
+  assign2 : ∀ {ℓ e s e' s'} →
+       P ⟨ e , s ⟩ ⟨ e' , s' ⟩ →
+      --------------------------------
+       IH P at ⟨ ℓ := e , s ⟩ ⟶ ⟨ ℓ := e' , s' ⟩
+
+  seq1 : ∀ {e₂ s} →
+       IH P at ⟨ Skip ⨾ e₂ , s ⟩ ⟶ ⟨ e₂ , s ⟩
+
+  seq2 : ∀ {e₁ e₂ s e₁' s'} →
+       P ⟨ e₁ , s ⟩ ⟨ e₁' , s' ⟩ →
+      --------------------------------
+       IH P at ⟨ e₁ ⨾ e₂ , s ⟩ ⟶ ⟨ e₁' ⨾ e₂ , s' ⟩
+
+  if1 : ∀ {e₂ e₃ s} →
+      IH P at ⟨ If B true Then e₂ Else e₃ , s ⟩ ⟶ ⟨ e₂ , s ⟩
+
+  if2 : ∀ {e₂ e₃ s} →
+      IH P at ⟨ If B false Then e₂ Else e₃ , s ⟩ ⟶ ⟨ e₃ , s ⟩
+
+  if3 : ∀ {e₁ e₂ e₃ s e₁' s'} →
+      P ⟨ e₁ , s ⟩ ⟨ e₁' , s' ⟩ →
+      -----------------------------------------------------------
+      IH P at ⟨ If e₁ Then e₂ Else e₃ , s ⟩ ⟶ ⟨ If e₁' Then e₂ Else e₃ , s' ⟩
+
+  while : ∀ {e₁ e₂ s} →
+      IH P at ⟨ While e₁ Do e₂ , s ⟩ ⟶ ⟨ If e₁ Then (e₂ ⨾ (While e₁ Do e₂)) Else Skip , s ⟩
+
+  app1 : ∀ { e₁ e₂ e₁' s s' } →
+      P ⟨ e₁ , s ⟩ ⟨ e₁' , s' ⟩ →
+      ----------------------------------
+      IH P at ⟨ e₁ ＠ e₂ , s ⟩ ⟶ ⟨ e₁' ＠ e₂ , s' ⟩
+
+  app2 : ∀ { v e₂ e₂' s s' } →
+      Value v →
+      P ⟨ e₂ , s ⟩ ⟨ e₂' , s' ⟩ →
+      ----------------------------------
+      IH P at ⟨ v ＠ e₂ , s ⟩ ⟶ ⟨ v ＠ e₂' , s' ⟩
+
+  fn : ∀ { v e s T } →
+      Value v →
+      ----------------------------------
+      IH P at ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ (subst (v ∷ []) e) , s ⟩
+
+  let1 :  ∀ { e₁ e₂ e₁' s s' T } →
+    P ⟨ e₁ , s ⟩ ⟨ e₁' , s' ⟩ →
+    -------------------------------
+    IH P at ⟨ LetVal: T ≔ e₁ In e₂ , s ⟩ ⟶ ⟨ LetVal: T ≔ e₁' In e₂ , s' ⟩
+
+  let2 :  ∀ { v e s T } →
+    Value v →
+    -------------------------------
+    IH P at ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
+
+  letrecfn : ∀ { e₁ e₂ s T₁ T₂ } →
+    IH P at ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶
+    ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
+
+→-induction :
+  ∀ {e s e' s'} →
+  {P : Expression × Store → Expression × Store → Set} →
+  (∀ {e s e' s'} → IH P at ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ → P ⟨ e , s ⟩ ⟨ e' , s' ⟩) →
+  ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ →  P ⟨ e , s ⟩ ⟨ e' , s' ⟩
+→-induction k op+ = k op+
+→-induction k op≥ = k op≥
+→-induction k (op1 step) = k (op1 (→-induction k step))
+→-induction k (op2 isVal step) = k (op2 isVal (→-induction k step))
+→-induction k (deref locInStore) = k (deref locInStore)
+→-induction k (assign1 locInStore) = k (assign1 locInStore)
+→-induction k (assign2 step) = k (assign2 (→-induction k step))
+→-induction k seq1 = k seq1
+→-induction k (seq2 step) = k (seq2 (→-induction k step))
+→-induction k if1 = k if1
+→-induction k if2 = k if2
+→-induction k (if3 step) = k (if3 (→-induction k step))
+→-induction k while = k while
+→-induction k (app1 step) = k (app1 (→-induction k step))
+→-induction k (app2 isVal step) = k (app2 isVal (→-induction k step))
+→-induction k (fn isVal) = k (fn isVal)
+→-induction k (let1 step) = k (let1 (→-induction k step))
+→-induction k (let2 isVal) = k (let2 isVal)
+→-induction k letrecfn = k letrecfn
