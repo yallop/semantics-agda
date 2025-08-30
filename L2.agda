@@ -1,13 +1,14 @@
 {-# OPTIONS --without-K --guardedness --safe --exact-split #-}
 
 open import Data.Nat hiding (_+_)
-open import Data.Bool using (Bool; false; true)
+open import Data.Bool using (Bool; false; true; if_then_else_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.List using (List; []; _∷_; map)
 open import Data.Integer using (ℤ; 0ℤ; -1ℤ; +_) renaming (_+_ to _+ℤ_; _≤ᵇ_ to _≤ℤ_)
 open import Data.Product using (Σ-syntax; ∃-syntax; _×_) renaming (_,_ to ⟨_,_⟩)
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+
 
 -- Locations
 𝕃 : Set
@@ -117,13 +118,28 @@ _!!_ : Store → 𝕃 → Maybe ℤ
 --  Substitution
 σ = List Expression
 
-lookup : σ → 𝕏 → Maybe (Expression)
+lookup : σ → 𝕏 → Maybe Expression
 lookup [] x = nothing
 lookup (y ∷ es) zero = just y
 lookup (y ∷ es) (suc n) = lookup es n
 
+lookup-var : σ → 𝕏 → Expression
+lookup-var s m with lookup s m
+... | just e = e
+... | nothing = Var m
+
 ρ : Set
 ρ = 𝕏 → 𝕏
+
+_∷ᵣ_ : ℕ → ρ → ρ
+(n ∷ᵣ r) zero = n
+(n ∷ᵣ r) (suc x) = r x
+
+_∘ᵣ_ : ρ → ρ → ρ
+_∘ᵣ_ r₁ r₂ i = r₁ (r₂ i)
+
+⇑ᵣ : ρ → ρ
+⇑ᵣ r = 0 ∷ᵣ (suc ∘ᵣ r)
 
 rename : ρ → Expression → Expression
 rename r (N n) = N n
@@ -136,10 +152,10 @@ rename r Skip = Skip
 rename r (e₁ ⨾ e₂) = (rename r e₁) ⨾ (rename r e₂)
 rename r (While e₁ Do e₂) = While (rename r e₁) Do (rename r e₂)
 rename r (e₁ ＠ e₂) = (rename r e₁) ＠ (rename r e₂)
-rename r (Fn: T ⇒ e) = Fn: T ⇒ (rename r e)
+rename r (Fn: T ⇒ e) = Fn: T ⇒ (rename (⇑ᵣ r) e)
 rename r (Var x) = Var (r x)
-rename r (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ (rename r e₁) In (rename r e₂)
-rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ (rename r e₁) ]In (rename r e₂)
+rename r (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ (rename r e₁) In (rename (⇑ᵣ r) e₂)
+rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ (rename (⇑ᵣ (⇑ᵣ r)) e₁) ]In (rename (⇑ᵣ r) e₂)
 
 ↑ : Expression → Expression
 ↑ = rename suc
@@ -154,19 +170,16 @@ rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: 
 
 shift : σ → ℕ → σ
 shift s zero = s
-shift s (suc n) = (Var 0) ∷ map (↑) (shift s n)
+shift s (suc n) = (Var 0) ∷ (map (↑) (shift s n))
 
 ⇑ : σ → σ
 ⇑ s = shift s 1
 
-swap : ρ
-swap zero = suc (zero)
-swap (suc zero) = zero
-swap (2+ n) = 2+ n
+swap : ℕ → ρ
+swap n m = if m ≡ᵇ n then (suc n) else (if m ≡ᵇ (suc n) then n else m)
 
 ⇄ : Expression → Expression
-⇄ e = rename swap e
-
+⇄ e = rename (swap 0) e
 
 subst :  σ → Expression → Expression
 subst s (N n) = N n
@@ -180,9 +193,7 @@ subst s (e₁ ⨾ e₂) = (subst s e₁) ⨾ (subst s e₂)
 subst s (While e₁ Do e₂) = While (subst s e₁) Do (subst s e₂)
 subst s (e₁ ＠ e₂) = (subst s e₁) ＠ (subst s e₂)
 subst s (Fn: T ⇒ e) = Fn: T ⇒ subst (⇑ s) e
-subst s (Var x) with lookup s x
-... | just e = e
-... | nothing = Var x
+subst s (Var x) = lookup-var s x
 subst s (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ subst s e₁ In subst (⇑ s) e₂
 subst s (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ subst (⇑ (⇑ s)) e₁ ]In subst (⇑ s) e₂
 
