@@ -68,13 +68,13 @@ data Expression : Set where
   While_Do_  : Expression → Expression → Expression
   _＠_ : Expression → Expression → Expression -- This is function application
   Fn:_⇒_ : Type → Expression → Expression
-  Var_ : 𝕏 → Expression
+  Var : 𝕏 → Expression
   LetVal:_≔_In_ : Type → Expression → Expression → Expression
   LetValRec:_➝_≔[Fn:_⇒_]In_ : Type → Type → Type → Expression → Expression → Expression
 
 infixl 60 _＠_
 infix 50 !_
-infix 50 Var_
+infix 50 Var
 infix 40 _[_]_
 infix 30 _:=_
 infix 20 While_Do_
