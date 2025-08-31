@@ -1,13 +1,13 @@
 {-# OPTIONS --without-K --guardedness --safe --exact-split #-}
 
-open import Data.Nat hiding (_+_)
+open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
 open import Data.Bool using (Bool; false; true; if_then_else_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.List using (List; []; _∷_; map)
-open import Data.Integer using (ℤ; 0ℤ; -1ℤ; +_) renaming (_+_ to _+ℤ_; _≤ᵇ_ to _≤ℤ_)
-open import Data.Product using (Σ-syntax; ∃-syntax; _×_) renaming (_,_ to ⟨_,_⟩)
-open import Relation.Nullary
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+open import Data.Integer using (ℤ) renaming (_+_ to _+ℤ_; _≤ᵇ_ to _≤ℤ_)
+open import Data.Product using (_×_) renaming (_,_ to ⟨_,_⟩)
+open import Relation.Nullary using (Dec; yes; no)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
 
 -- Locations
@@ -111,7 +111,7 @@ _⨄_ : Store → Store → Store
 infixl 20 _⨄_
 
 _!!_ : Store → 𝕃 → Maybe ℤ
-[] !! ℓ = nothing
+[] !! _ = nothing
 (v ∷ _) !! zero = v
 (_ ∷ s) !! suc ℓ = s !! ℓ
 
@@ -119,7 +119,7 @@ _!!_ : Store → 𝕃 → Maybe ℤ
 σ = List Expression
 
 lookup : σ → 𝕏 → Maybe Expression
-lookup [] x = nothing
+lookup [] _ = nothing
 lookup (y ∷ es) zero = just y
 lookup (y ∷ es) (suc n) = lookup es n
 
@@ -132,8 +132,8 @@ lookup-var s m with lookup s m
 ρ = 𝕏 → 𝕏
 
 _∷ᵣ_ : ℕ → ρ → ρ
-(n ∷ᵣ r) zero = n
-(n ∷ᵣ r) (suc x) = r x
+(n ∷ᵣ _) zero = n
+(_ ∷ᵣ r) (suc x) = r x
 
 _∘ᵣ_ : ρ → ρ → ρ
 _∘ᵣ_ r₁ r₂ i = r₁ (r₂ i)
@@ -163,17 +163,17 @@ rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: 
 ≥2?+1 : ρ
 ≥2?+1 zero = zero
 ≥2?+1 (suc zero) = suc zero
-≥2?+1 (2+ n) = suc (2+ n)
+≥2?+1 (suc (suc n)) = suc (suc (suc n))
 
 ≥2?↑ : Expression → Expression
 ≥2?↑ = rename ≥2?+1
 
-shift : σ → ℕ → σ
-shift s zero = s
-shift s (suc n) = (Var 0) ∷ (map (↑) (shift s n))
+shift : ℕ → σ → σ
+shift zero s = s
+shift (suc n) s = (Var 0) ∷ (map (↑) (shift n s))
 
 ⇑ : σ → σ
-⇑ s = shift s 1
+⇑ = shift 1
 
 swap : ℕ → ρ
 swap n m = if m ≡ᵇ n then (suc n) else (if m ≡ᵇ (suc n) then n else m)

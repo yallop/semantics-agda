@@ -1,11 +1,11 @@
 {-# OPTIONS --without-K --guardedness --safe --exact-split #-}
 
 open import Data.Bool using (Bool; false; true)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Maybe using (just)
 open import Data.Integer using (ℤ; 0ℤ; -1ℤ; +_) renaming (_+_ to _+ℤ_; _≤ᵇ_ to _≤ℤ_)
-open import Data.Product using (Σ-syntax; ∃-syntax; _×_) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product using (_×_) renaming (_,_ to ⟨_,_⟩)
 open import Data.List using ([]; _∷_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+open import Relation.Binary.PropositionalEquality using (_≡_)
 
 open import L2
 
@@ -96,7 +96,7 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
      IH P at Σ ⨾ Γ ⊢ While e₁ Do e₂ ∶ unit
 
   var : ∀ { Σ Γ x T } →
-    Γ ( x ) ≡ just T →
+    Γ x ≡ just T →
     ------------------------
     IH P at Σ ⨾ Γ ⊢ Var x ∶ T
 
@@ -128,7 +128,7 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
     (∀ {Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → IH P at Σ ⨾ Γ ⊢ e ∶ T → P Γ e T) →
     (Σ ⨾ Γ ⊢ e ∶ T) →
     P Γ e T
-⊢-induction k te@int = k te int      -- te stands for typed expression, is an alias for int
+⊢-induction k te@int = k te int      -- te stands for typed expression, is an alias for the whole expression
 ⊢-induction k te@bool = k te bool
 ⊢-induction k te@(op+ e₁ e₂) = k te (op+ (⊢-induction k e₁) (⊢-induction k e₂))
 ⊢-induction k te@(op≥ e₁ e₂) = k te (op≥ (⊢-induction k e₁) (⊢-induction k e₂))
@@ -213,7 +213,7 @@ data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
   fn : ∀ { v e s T } →
       Value v →
       ----------------------------------
-      IH P at ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ (subst (v ∷ []) e) , s ⟩
+      IH P at ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
 
   let1 :  ∀ { e₁ e₂ e₁' s s' T } →
     P ⟨ e₁ , s ⟩ ⟨ e₁' , s' ⟩ →
