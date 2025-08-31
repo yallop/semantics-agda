@@ -213,7 +213,7 @@ data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
   fn : ∀ { v e s T } →
       Value v →
       ----------------------------------
-      IH P at ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
+      IH P at ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ subst [ v ]ₛ e , s ⟩
 
   let1 :  ∀ { e₁ e₂ e₁' s s' T } →
     P ⟨ e₁ , s ⟩ ⟨ e₁' , s' ⟩ →
@@ -223,11 +223,11 @@ data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
   let2 :  ∀ { v e s T } →
     Value v →
     -------------------------------
-    IH P at ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
+    IH P at ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst [ v ]ₛ e , s ⟩
 
   letrecfn : ∀ { e₁ e₂ s T₁ T₂ } →
     IH P at ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶
-    ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
+    ⟨ subst ([ (Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ]ₛ) e₂ , s ⟩
 
 →-induction :
   ∀ {e s e' s'} →

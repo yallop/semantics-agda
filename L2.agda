@@ -116,17 +116,17 @@ _!!_ : Store → 𝕃 → Maybe ℤ
 (_ ∷ s) !! suc ℓ = s !! ℓ
 
 --  Substitution
-σ = List Expression
+σ = 𝕏 → Expression
 
-lookup : σ → 𝕏 → Maybe Expression
-lookup [] _ = nothing
-lookup (y ∷ es) zero = just y
-lookup (y ∷ es) (suc n) = lookup es n
+•ₛ : σ 
+•ₛ = Var
 
-lookup-var : σ → 𝕏 → Expression
-lookup-var s m with lookup s m
-... | just e = e
-... | nothing = Var m
+_∷ₛ_ : Expression → σ → σ
+(e ∷ₛ _) zero = e
+(_ ∷ₛ s) (suc x) = s x
+
+[_]ₛ : Expression → σ 
+[ e ]ₛ = e ∷ₛ •ₛ
 
 ρ : Set
 ρ = 𝕏 → 𝕏
@@ -160,6 +160,9 @@ rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: 
 ↑ : Expression → Expression
 ↑ = rename suc
 
+substMap : (Expression → Expression) → σ → σ 
+substMap f s = λ x → f (s x)
+
 ≥2?+1 : ρ
 ≥2?+1 zero = zero
 ≥2?+1 (suc zero) = suc zero
@@ -170,7 +173,7 @@ rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: 
 
 shift : ℕ → σ → σ
 shift zero s = s
-shift (suc n) s = (Var 0) ∷ (map (↑) (shift n s))
+shift (suc n) s = (Var 0) ∷ₛ (substMap (↑) (shift n s))
 
 ⇑ : σ → σ
 ⇑ = shift 1
@@ -193,7 +196,7 @@ subst s (e₁ ⨾ e₂) = (subst s e₁) ⨾ (subst s e₂)
 subst s (While e₁ Do e₂) = While (subst s e₁) Do (subst s e₂)
 subst s (e₁ ＠ e₂) = (subst s e₁) ＠ (subst s e₂)
 subst s (Fn: T ⇒ e) = Fn: T ⇒ subst (⇑ s) e
-subst s (Var x) = lookup-var s x
+subst s (Var x) = s x
 subst s (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ subst s e₁ In subst (⇑ s) e₂
 subst s (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ subst (⇑ (⇑ s)) e₁ ]In subst (⇑ s) e₂
 
@@ -266,7 +269,7 @@ data _⟶_ : Expression × Store → Expression × Store → Set where
   fn : ∀ { v e s T } →
       Value v →
       ----------------------------------
-      ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ (subst (v ∷ []) e) , s ⟩
+      ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ subst [ v ]ₛ e , s ⟩
 
   let1 :  ∀ { e₁ e₂ e₁' s s' T } →
     ⟨ e₁ , s ⟩ ⟶ ⟨ e₁' , s' ⟩ →
@@ -276,11 +279,11 @@ data _⟶_ : Expression × Store → Expression × Store → Set where
   let2 :  ∀ { v e s T } →
     Value v →
     -------------------------------
-    ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
+    ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst [ v ]ₛ e , s ⟩
 
   letrecfn : ∀ { e₁ e₂ s T₁ T₂ } →
     ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶
-    ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
+    ⟨ subst ([ Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁) ]ₛ) e₂ , s ⟩
 
 
 data _⟶⋆_ : Expression × Store → Expression × Store → Set where

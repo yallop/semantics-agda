@@ -2,6 +2,7 @@
 
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Maybe using (just; nothing) renaming (map to maybeMap)
+open import Data.Maybe.Properties using (just-injective)
 open import Data.List using ([]; _∷_) renaming (map to listMap)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong) renaming (subst to ≡-subst)
 open import Function.Base using (id)
@@ -9,8 +10,9 @@ open import Function.Base using (id)
 open import L2
 open import L2-Induction
 
-data _⊨σ_∶_ : TypeEnv → σ → TypeEnv → Set where
-    compatible : {Γ' : TypeEnv} → {s : σ} → {Γ : TypeEnv} → (∀ {T Σ} → (x : 𝕏) → Γ(x) ≡ just T → Σ ⨾ Γ' ⊢ lookup-var s x ∶ T) → Γ' ⊨σ s ∶ Γ
+-- Lemma 20: Substitution
+data _⨟_⊨σ_∶_ : StoreEnv → TypeEnv → σ → TypeEnv → Set where
+    compatible : {Σ : StoreEnv} → {Γ' : TypeEnv} → {s : σ} → {Γ : TypeEnv} → (∀ {T} → (x : 𝕏) → Γ(x) ≡ just T → Σ ⨾ Γ' ⊢ s x ∶ T) → (Σ ⨟ Γ' ⊨σ s ∶ Γ)
 
 data _⊢ρ_∶_ : TypeEnv → ρ → TypeEnv → Set where
     compatible : {Γ' : TypeEnv} → {r : ρ} → {Γ : TypeEnv} → ((x : 𝕏) → Γ' (r x) ≡ Γ(x)) → Γ' ⊢ρ r ∶ Γ
@@ -46,27 +48,32 @@ RenamingLemma {Σ} derivation =  ⊢-induction case derivation where
     case (letval deriv₁ deriv₂) (letval ih-e₁ ih-e₂) compat-proof = letval (ih-e₁ compat-proof) (ih-e₂ (⇑ᵣ-has-type compat-proof))
     case (letrecfn deriv₁ deriv₂) (letrecfn ih-e₁ ih-e₂) compat-proof = letrecfn (ih-e₁ (⇑ᵣ-has-type (⇑ᵣ-has-type compat-proof))) (ih-e₂ (⇑ᵣ-has-type compat-proof))
 
-lookup-↑-commute : (sub : σ) → (x : 𝕏) → lookup (listMap ↑ sub) x ≡ maybeMap ↑ (lookup sub x)
-lookup-↑-commute [] _ = refl
-lookup-↑-commute (_ ∷ s) zero = refl
-lookup-↑-commute (_ ∷ s) (suc x) = lookup-↑-commute s x
 
-lookup-var-⇑s : (sub : σ) → (x : 𝕏) → lookup-var (⇑ sub) (suc x) ≡ ↑ (lookup-var sub x)
-lookup-var-⇑s [] _ = refl
-lookup-var-⇑s (_ ∷ s) zero = refl
-lookup-var-⇑s (_ ∷ s) (suc x) rewrite lookup-↑-commute s x with lookup s x
-lookup-var-⇑s (_ ∷ s) (suc _) | just _ = refl
-lookup-var-⇑s (_ ∷ s) (suc _) | nothing = refl
 
-⇑-has-type : ∀ {Γ Γ' s T} → Γ' ⊨σ s ∶ Γ → (Γ' , T) ⊨σ ⇑ s ∶ (Γ , T)
-⇑-has-type {Γ' = Γ'} {s} {T} (compatible p) = compatible (λ {
+⇑-has-type : ∀ {Σ Γ Γ' s T} → (Σ ⨟ Γ' ⊨σ s ∶ Γ) → (Σ ⨟ (Γ' , T) ⊨σ ⇑ s ∶ (Γ , T))
+⇑-has-type {Σ} {Γ' = Γ'} {s} {T} (compatible p) = compatible (λ {
   zero x-type → var x-type ;
-  {T = T'} {Σ} (suc x) x-type → ≡-subst (λ y → Σ ⨾ Γ' , T ⊢ y ∶ T') (sym (lookup-var-⇑s s x)) (RenamingLemma (p x x-type) ↑-has-type)})
+  {T = T'} (suc x) x-type →(RenamingLemma (p x x-type) ↑-has-type)})
 
-SubstitutionLemma : ∀ {Σ Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → (∀ {Γ' s} → Γ' ⊨σ s ∶ Γ → Σ ⨾ Γ' ⊢ subst s e ∶ T)
+id-subst-has-type : ∀ {Σ Γ} → Σ ⨟ Γ ⊨σ •ₛ ∶ Γ 
+id-subst-has-type = compatible λ {T} x → var
+
+lookup-zero : ∀ {Γ T T'} → (Γ , T) zero ≡ just T' → T ≡ T' 
+lookup-zero p = just-injective p
+
+∷ₛ-has-type : ∀ {Σ Γ Γ' T e s} → Σ ⨾ Γ' ⊢ e ∶ T → (Σ ⨟ Γ' ⊨σ s ∶ Γ) → (Σ ⨟ Γ' ⊨σ (e ∷ₛ s) ∶ (Γ , T))
+∷ₛ-has-type {Σ} {Γ} {Γ'} {T} {e} {s} deriv (compatible p) = compatible compat-proof where 
+  compat-proof : ∀ {T'} → (x : 𝕏) → (Γ , T)(x) ≡ just T' → Σ ⨾ Γ' ⊢ (e ∷ₛ s) x ∶ T'
+  compat-proof zero q = ≡-subst (λ y → Σ ⨾ Γ' ⊢ (e ∷ₛ s) zero ∶ y) (lookup-zero q) deriv
+  compat-proof (suc x) q = p x q
+
+[e]ₛ-has-type : ∀ {Σ Γ T e} → Σ ⨾ Γ ⊢ e ∶ T → (Σ ⨟ Γ ⊨σ [ e ]ₛ ∶ (Γ , T))
+[e]ₛ-has-type deriv = ∷ₛ-has-type deriv id-subst-has-type
+
+SubstitutionLemma : ∀ {Σ Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → (∀ {Γ' s} → Σ ⨟ Γ' ⊨σ s ∶ Γ → Σ ⨾ Γ' ⊢ subst s e ∶ T)
 SubstitutionLemma {Σ} derivation = ⊢-induction case derivation where
     P : TypeEnv → Expression → Type → Set
-    P Γ e T = ∀ {Γ' s} → Γ' ⊨σ s ∶ Γ → Σ ⨾ Γ' ⊢ subst s e ∶ T
+    P Γ e T = ∀ {Γ' s} → Σ ⨟ Γ' ⊨σ s ∶ Γ → Σ ⨾ Γ' ⊢ subst s e ∶ T
     case : ∀ {Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → IH P at Σ ⨾ Γ ⊢ e ∶ T → P Γ e T
     case int ih compat-proof = int
     case bool ih compat-proof = bool
