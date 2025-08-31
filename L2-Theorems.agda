@@ -11,7 +11,7 @@ open import Data.Product using (Σ-syntax; ∃-syntax; _×_) renaming (_,_ to �
 open import Relation.Nullary
 open import Relation.Nullary.Negation
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
-open import Function.Base using (case_of_)
+open import Function.Base using (case_of_; id)
 
 open import L2
 open import L2-Induction
@@ -23,14 +23,14 @@ data _⊢ρ_∶_ : TypeEnv → ρ → TypeEnv → Set where
     compatible : {Γ' : TypeEnv} → {r : ρ} → {Γ : TypeEnv} → (∀ {x T} → Γ(x) ≡ just T → (Γ' (r x) ≡ just T)) → Γ' ⊢ρ r ∶ Γ
 
 ↑-has-type : ∀ {Γ T} → (Γ , T) ⊢ρ suc ∶ Γ
-↑-has-type = compatible (λ {x} {T = T₁} z → z)
+↑-has-type = compatible id
 
 ⇑ᵣ-equiv : ∀ {Γ Γ' r x T T'} → Γ' ⊢ρ r ∶ Γ → (Γ , T') x ≡ just T → (Γ' , T') ((⇑ᵣ r) x) ≡ just T
 ⇑ᵣ-equiv {Γ} {Γ'} {r} {zero} {T} {T'} p q = q
 ⇑ᵣ-equiv {Γ} {Γ'} {r} {suc x} {T} {T'} (compatible x₁) q = x₁ q
 
 ⇑ᵣ-has-type : ∀ {Γ Γ' T r} → Γ' ⊢ρ r ∶ Γ → (Γ' , T) ⊢ρ (⇑ᵣ r) ∶ (Γ , T)
-⇑ᵣ-has-type p = compatible (⇑ᵣ-equiv p)
+⇑ᵣ-has-type {Γ} {Γ'} {T} {r} p = compatible (λ {x} → ⇑ᵣ-equiv {x = x} p)
 
 RenamingLemma : ∀ {Σ Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → ∀ {Γ' r} → Γ' ⊢ρ r ∶ Γ → Σ ⨾ Γ' ⊢ (rename r e) ∶ T
 RenamingLemma {Σ} {_} {_} {_} derivation =  ⊢-induction case derivation where
@@ -53,7 +53,6 @@ RenamingLemma {Σ} {_} {_} {_} derivation =  ⊢-induction case derivation where
     case (letval deriv₁ deriv₂) (letval ih-e₁ ih-e₂) compat-proof = letval (ih-e₁ compat-proof) (ih-e₂ (⇑ᵣ-has-type compat-proof))
     case (letrecfn deriv₁ deriv₂) (letrecfn ih-e₁ ih-e₂) compat-proof = letrecfn (ih-e₁ (⇑ᵣ-has-type (⇑ᵣ-has-type compat-proof))) (ih-e₂ (⇑ᵣ-has-type compat-proof))
 
--- Thanks to Jacob Bennett-Woolf for helping me write lookup-↑-commute and lookup-var-⇑s
 lookup-↑-commute : (sub : σ) → (x : 𝕏) → lookup (listMap ↑ sub) x ≡ maybeMap ↑ (lookup sub x)
 lookup-↑-commute [] x = refl
 lookup-↑-commute (x₁ ∷ s) zero = refl
@@ -67,7 +66,7 @@ lookup-var-⇑s (x₁ ∷ s) (suc x) | just x₂ = refl
 lookup-var-⇑s (x₁ ∷ s) (suc x) | nothing = refl
 
 ⇑-has-type : ∀ {Γ Γ' s T} → Γ' ⊨σ s ∶ Γ → (Γ' , T) ⊨σ ⇑ s ∶ (Γ , T)
-⇑-has-type {Γ} {Γ'} {s} {T} (compatible p) = compatible compat-proof where
+⇑-has-type {Γ} {Γ'} {s} {T} (compatible p) = compatible (λ {x} → compat-proof {x}) where
     compat-proof : ∀ {x T' Σ } → (Γ , T) x ≡ just T' → Σ ⨾ (Γ' , T) ⊢ lookup-var (⇑ s) (x) ∶ T'
     compat-proof {zero} {T'} {Σ} x-type = var x-type
     compat-proof {suc x} {T'} {Σ} x-type rewrite (lookup-var-⇑s s x) = RenamingLemma (p x-type) ↑-has-type
