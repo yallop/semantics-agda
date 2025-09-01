@@ -1,4 +1,4 @@
-{-# OPTIONS --without-K --guardedness --safe --exact-split #-}
+{-# OPTIONS --without-K --safe --exact-split #-}
 
 open import Data.Bool using (Bool; false; true)
 open import Data.Maybe using (just)
@@ -96,12 +96,12 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
      IH P at Σ ⨾ Γ ⊢ While e₁ Do e₂ ∶ unit
 
   var : ∀ { Σ Γ x T } →
-    Γ x ≡ just T →
+    Γ ( x ) ≡ just T →
     ------------------------
     IH P at Σ ⨾ Γ ⊢ Var x ∶ T
 
   fn : ∀ { Σ Γ T₁ T₂ e } →
-    P (Γ , T₁) e T₂ →
+    P (Γ ,,, T₁) e T₂ →
     ------------------------
     IH P at Σ ⨾ Γ ⊢ (Fn: T₁ ⇒ e) ∶ (T₁ ➝ T₂)
 
@@ -113,13 +113,13 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
 
   letval : ∀ { Σ Γ T₁ T₂ e₁ e₂ } →
     P Γ e₁ T₁ →
-    P (Γ , T₁) e₂ T₂ →
+    P (Γ ,,, T₁) e₂ T₂ →
     ------------------------
     IH P at Σ ⨾ Γ ⊢ LetVal: T₁ ≔ e₁ In e₂ ∶ T₂
 
   letrecfn : ∀ { Σ Γ T₁ T₂ T e₁ e₂ } →
-    P (Γ , ( T₁ ➝ T₂ ), T₁) e₁ T₂ →
-    P ( Γ , ( T₁ ➝ T₂ ) ) e₂ T →
+    P (Γ ,,, ( T₁ ➝ T₂ ) ,,, T₁) e₁ T₂ →
+    P ( Γ ,,, ( T₁ ➝ T₂ ) ) e₂ T →
     ------------------------
     IH P at Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ ∶ T
 
@@ -143,6 +143,13 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
 ⊢-induction k te@(app e₁ e₂) = k te (app (⊢-induction k e₁) (⊢-induction k e₂))
 ⊢-induction k te@(letval e₁ e₂) = k te (letval (⊢-induction k e₁) (⊢-induction k e₂))
 ⊢-induction k te@(letrecfn e₁ e₂) = k te (letrecfn (⊢-induction k e₁) (⊢-induction k e₂))
+
+⊢-induction-simple : ∀ {Σ Γ e T} →
+    ∀ {P : TypeEnv → Expression → Type → Set} →
+    (∀ {Γ e T} → IH P at Σ ⨾ Γ ⊢ e ∶ T → P Γ e T) →
+    (Σ ⨾ Γ ⊢ e ∶ T) →
+    P Γ e T
+⊢-induction-simple k deriv = ⊢-induction ((λ _ → k)) deriv
 
 data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
                    : Expression × Store → Expression × Store → Set where

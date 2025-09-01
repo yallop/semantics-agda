@@ -1,4 +1,4 @@
-{-# OPTIONS --without-K --guardedness --safe --exact-split #-}
+{-# OPTIONS --without-K --safe --exact-split #-}
 
 open import Data.Nat using (ℕ; zero; suc; _≡ᵇ_)
 open import Data.Bool using (Bool; false; true; if_then_else_)
@@ -118,28 +118,28 @@ _!!_ : Store → 𝕃 → Maybe ℤ
 --  Substitution
 σ = 𝕏 → Expression
 
-•ₛ : σ 
+•ₛ : σ
 •ₛ = Var
 
-_∷ₛ_ : Expression → σ → σ
-(e ∷ₛ _) zero = e
-(_ ∷ₛ s) (suc x) = s x
+_,,ₛ_ :  σ → Expression → σ
+(_ ,,ₛ e) zero = e
+(s ,,ₛ _) (suc x) = s x
 
-[_]ₛ : Expression → σ 
-[ e ]ₛ = e ∷ₛ •ₛ
+[_]ₛ : Expression → σ
+[ e ]ₛ = •ₛ ,,ₛ e
 
 ρ : Set
 ρ = 𝕏 → 𝕏
 
-_∷ᵣ_ : ℕ → ρ → ρ
-(n ∷ᵣ _) zero = n
-(_ ∷ᵣ r) (suc x) = r x
+_,,ᵣ_ : ρ → ℕ → ρ
+(_ ,,ᵣ n) zero = n
+(r ,,ᵣ _) (suc x) = r x
 
 _∘ᵣ_ : ρ → ρ → ρ
 _∘ᵣ_ r₁ r₂ i = r₁ (r₂ i)
 
 ⇑ᵣ : ρ → ρ
-⇑ᵣ r = 0 ∷ᵣ (suc ∘ᵣ r)
+⇑ᵣ r = (suc ∘ᵣ r) ,,ᵣ 0
 
 rename : ρ → Expression → Expression
 rename r (N n) = N n
@@ -160,7 +160,7 @@ rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: 
 ↑ : Expression → Expression
 ↑ = rename suc
 
-substMap : (Expression → Expression) → σ → σ 
+substMap : (Expression → Expression) → σ → σ
 substMap f s = λ x → f (s x)
 
 ≥2?+1 : ρ
@@ -173,7 +173,7 @@ substMap f s = λ x → f (s x)
 
 shift : ℕ → σ → σ
 shift zero s = s
-shift (suc n) s = (Var 0) ∷ₛ (substMap (↑) (shift n s))
+shift (suc n) s = (substMap (↑) (shift n s)) ,,ₛ  (Var 0)
 
 ⇑ : σ → σ
 ⇑ = shift 1
@@ -314,10 +314,10 @@ TypeEnv = 𝕏 → Maybe Type
 • : TypeEnv
 • = λ {n → nothing}
 
-_,_ : TypeEnv → Type → TypeEnv
-Γ , T = λ { zero → just T; (suc n) → Γ (n) }
+_,,,_ : TypeEnv → Type → TypeEnv
+Γ ,,, T = λ { zero → just T; (suc n) → Γ (n) }
 
-infixl 5 _,_
+infixl 5 _,,,_
 
 data _⨾_⊢_∶_ : StoreEnv → TypeEnv → Expression → Type → Set where
   int : ∀ { Σ Γ n} →
@@ -377,7 +377,7 @@ data _⨾_⊢_∶_ : StoreEnv → TypeEnv → Expression → Type → Set where
     Σ ⨾ Γ ⊢ Var x ∶ T
 
   fn : ∀ { Σ Γ T₁ T₂ e } →
-    Σ ⨾ (Γ , T₁) ⊢ e ∶ T₂ →
+    Σ ⨾ (Γ ,,, T₁) ⊢ e ∶ T₂ →
     ------------------------
     Σ ⨾ Γ ⊢ (Fn: T₁ ⇒ e) ∶ (T₁ ➝ T₂)
 
@@ -390,12 +390,12 @@ data _⨾_⊢_∶_ : StoreEnv → TypeEnv → Expression → Type → Set where
   letval : ∀ { Σ Γ T₁ T₂ e₁ e₂ } → -- This corresponds to the "let" rule in the notes,
                                    -- Naming restrictions prevent me from naming it such
     Σ ⨾ Γ ⊢ e₁ ∶ T₁ →
-    Σ ⨾ ( Γ , T₁ ) ⊢ e₂ ∶ T₂ →
+    Σ ⨾ ( Γ ,,, T₁ ) ⊢ e₂ ∶ T₂ →
     ------------------------
     Σ ⨾ Γ ⊢ LetVal: T₁ ≔ e₁ In e₂ ∶ T₂
 
   letrecfn : ∀ { Σ Γ T₁ T₂ T e₁ e₂ } →
-    Σ ⨾ ( (Γ , ( T₁ ➝ T₂ ), T₁)) ⊢ e₁ ∶ T₂ →
-    Σ ⨾ ( Γ , ( T₁ ➝ T₂ ) ) ⊢ e₂ ∶ T →
+    Σ ⨾ ( (Γ ,,, ( T₁ ➝ T₂ ) ,,, T₁)) ⊢ e₁ ∶ T₂ →
+    Σ ⨾ ( Γ ,,, ( T₁ ➝ T₂ ) ) ⊢ e₂ ∶ T →
     ------------------------
     Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ ∶ T
