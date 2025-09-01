@@ -23,7 +23,7 @@ data IH_at_ (P : Expression → Set)  : (e : Expression) → Set where
     Fn:_⇒_ : ∀ {e} → (T : Type) → P e → IH P at (Fn: T ⇒ e)
     Var : (x : 𝕏) → IH P at (Var x)
     LetVal:_≔_In_ : ∀ {e₁ e₂} → (T : Type) → P e₁ → P e₂ → IH P at (LetVal: T ≔ e₁ In e₂)
-    LetValRec:_➝_≔[Fn:_⇒_]In_ : ∀ {e₁ e₂} →  (T₁ : Type) → (T₂ : Type) → (T₃ : Type) → P e₁ → P e₂ → IH P at (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂)
+    LetValRec:_➝_≔[Fn⇒_]In_ : ∀ {e₁ e₂} →  (T₁ : Type) → (T₂ : Type) → P e₁ → P e₂ → IH P at (LetValRec: T₁ ➝ T₂ ≔[Fn⇒ e₁ ]In e₂)
 
 structural-induction : {P : Expression → Set} →
     (∀ {e} → IH P at e → P e ) →
@@ -41,7 +41,7 @@ structural-induction k (e₁ ＠ e₂) = k ((structural-induction k e₁) ＠ (s
 structural-induction k (Fn: T ⇒ e) = k (Fn: T ⇒ (structural-induction k e))
 structural-induction k (Var x) = k (Var x)
 structural-induction k (LetVal: T ≔ e₁ In e₂) = k (LetVal: T ≔ (structural-induction k e₁) In (structural-induction k e₂))
-structural-induction k (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = k (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ (structural-induction k e₁) ]In (structural-induction k e₂))
+structural-induction k (LetValRec: T₁ ➝ T₂ ≔[Fn⇒ e₁ ]In e₂) = k (LetValRec: T₁ ➝ T₂ ≔[Fn⇒ (structural-induction k e₁) ]In (structural-induction k e₂))
 
 data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv → TypeEnv → Expression → Type → Set where
   int : ∀ {Σ Γ n} →
@@ -121,7 +121,7 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
     P (Γ ,,, ( T₁ ➝ T₂ ) ,,, T₁) e₁ T₂ →
     P ( Γ ,,, ( T₁ ➝ T₂ ) ) e₂ T →
     ------------------------
-    IH P at Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ ∶ T
+    IH P at Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn⇒ e₁ ]In e₂ ∶ T
 
 ⊢-induction : ∀ {Σ Γ e T} →
     ∀ {P : TypeEnv → Expression → Type → Set} →
@@ -233,8 +233,8 @@ data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
     IH P at ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst [ v ]ₛ e , s ⟩
 
   letrecfn : ∀ { e₁ e₂ s T₁ T₂ } →
-    IH P at ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶
-    ⟨ subst ([ (Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ]ₛ) e₂ , s ⟩
+    IH P at ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn⇒ e₁ ]In e₂ , s ⟩ ⟶
+    ⟨ subst ([ (Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ]ₛ) e₂ , s ⟩
 
 →-induction :
   ∀ {e s e' s'} →
