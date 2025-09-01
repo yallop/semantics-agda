@@ -1,11 +1,11 @@
-{-# OPTIONS --without-K --guardedness --safe --exact-split #-}
+{-# OPTIONS --without-K --safe --exact-split #-}
 
 open import Data.Bool using (Bool; false; true)
-open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Maybe using (just)
 open import Data.Integer using (ℤ; 0ℤ; -1ℤ; +_) renaming (_+_ to _+ℤ_; _≤ᵇ_ to _≤ℤ_)
-open import Data.Product using (Σ-syntax; ∃-syntax; _×_) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product using (_×_) renaming (_,_ to ⟨_,_⟩)
 open import Data.List using ([]; _∷_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; trans; cong)
+open import Relation.Binary.PropositionalEquality using (_≡_)
 
 open import L2
 
@@ -101,7 +101,7 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
     IH P at Σ ⨾ Γ ⊢ Var x ∶ T
 
   fn : ∀ { Σ Γ T₁ T₂ e } →
-    P (Γ , T₁) e T₂ →
+    P (Γ ,,, T₁) e T₂ →
     ------------------------
     IH P at Σ ⨾ Γ ⊢ (Fn: T₁ ⇒ e) ∶ (T₁ ➝ T₂)
 
@@ -113,13 +113,13 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
 
   letval : ∀ { Σ Γ T₁ T₂ e₁ e₂ } →
     P Γ e₁ T₁ →
-    P (Γ , T₁) e₂ T₂ →
+    P (Γ ,,, T₁) e₂ T₂ →
     ------------------------
     IH P at Σ ⨾ Γ ⊢ LetVal: T₁ ≔ e₁ In e₂ ∶ T₂
 
   letrecfn : ∀ { Σ Γ T₁ T₂ T e₁ e₂ } →
-    P (Γ , ( T₁ ➝ T₂ ), T₁) e₁ T₂ →
-    P ( Γ , ( T₁ ➝ T₂ ) ) e₂ T →
+    P (Γ ,,, ( T₁ ➝ T₂ ) ,,, T₁) e₁ T₂ →
+    P ( Γ ,,, ( T₁ ➝ T₂ ) ) e₂ T →
     ------------------------
     IH P at Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ ∶ T
 
@@ -128,7 +128,7 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
     (∀ {Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → IH P at Σ ⨾ Γ ⊢ e ∶ T → P Γ e T) →
     (Σ ⨾ Γ ⊢ e ∶ T) →
     P Γ e T
-⊢-induction k te@int = k te int      -- te stands for typed expression, is an alias for int
+⊢-induction k te@int = k te int      -- te stands for typed expression, is an alias for the whole expression
 ⊢-induction k te@bool = k te bool
 ⊢-induction k te@(op+ e₁ e₂) = k te (op+ (⊢-induction k e₁) (⊢-induction k e₂))
 ⊢-induction k te@(op≥ e₁ e₂) = k te (op≥ (⊢-induction k e₁) (⊢-induction k e₂))
@@ -143,6 +143,13 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
 ⊢-induction k te@(app e₁ e₂) = k te (app (⊢-induction k e₁) (⊢-induction k e₂))
 ⊢-induction k te@(letval e₁ e₂) = k te (letval (⊢-induction k e₁) (⊢-induction k e₂))
 ⊢-induction k te@(letrecfn e₁ e₂) = k te (letrecfn (⊢-induction k e₁) (⊢-induction k e₂))
+
+⊢-induction-simple : ∀ {Σ Γ e T} →
+    ∀ {P : TypeEnv → Expression → Type → Set} →
+    (∀ {Γ e T} → IH P at Σ ⨾ Γ ⊢ e ∶ T → P Γ e T) →
+    Σ ⨾ Γ ⊢ e ∶ T →
+    P Γ e T
+⊢-induction-simple k deriv = ⊢-induction (λ _ → k) deriv
 
 data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
                    : Expression × Store → Expression × Store → Set where
@@ -213,7 +220,7 @@ data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
   fn : ∀ { v e s T } →
       Value v →
       ----------------------------------
-      IH P at ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ (subst (v ∷ []) e) , s ⟩
+      IH P at ⟨ (Fn: T ⇒ e) ＠ v , s ⟩ ⟶ ⟨ subst [ v ]ₛ e , s ⟩
 
   let1 :  ∀ { e₁ e₂ e₁' s s' T } →
     P ⟨ e₁ , s ⟩ ⟨ e₁' , s' ⟩ →
@@ -223,11 +230,11 @@ data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
   let2 :  ∀ { v e s T } →
     Value v →
     -------------------------------
-    IH P at ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst (v ∷ []) e , s ⟩
+    IH P at ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst [ v ]ₛ e , s ⟩
 
   letrecfn : ∀ { e₁ e₂ s T₁ T₂ } →
     IH P at ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶
-    ⟨ subst ((Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ∷ []) e₂ , s ⟩
+    ⟨ subst ([ (Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁)) ]ₛ) e₂ , s ⟩
 
 →-induction :
   ∀ {e s e' s'} →
