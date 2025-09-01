@@ -7,9 +7,6 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans)
 open import L2
 open import L2-Induction
 
-data _⨟_⊨σ_∶_ (Σ : StoreEnv) (Γ' : TypeEnv) (s : σ)  (Γ : TypeEnv) : Set where
-    compatible : (∀ {T} x → Γ(x) ≡ just T → Σ ⨾ Γ' ⊢ s x ∶ T) → Σ ⨟ Γ' ⊨σ s ∶ Γ
-
 data _⊢ρ_∶_ (Γ' : TypeEnv) (r : ρ)  (Γ : TypeEnv)  : Set where
     compatible : (∀ x  → Γ' (r x) ≡ Γ(x)) → Γ' ⊢ρ r ∶ Γ
 
@@ -42,6 +39,8 @@ Renaming {Σ} derivation =  ⊢-induction-simple case derivation where
     case (letval h₁ h₂)                    = letval h₁ h₂
     case (letrecfn h₁ h₂)                  = letrecfn h₁ h₂
 
+data _⨟_⊨σ_∶_ (Σ : StoreEnv) (Γ' : TypeEnv) (s : σ)  (Γ : TypeEnv) : Set where
+    compatible : (∀ {T} x → Γ(x) ≡ just T → Σ ⨾ Γ' ⊢ s x ∶ T) → Σ ⨟ Γ' ⊨σ s ∶ Γ
 
 instance
     ⇑-has-type : ∀ {Σ Γ Γ' s T} → {{Σ ⨟ Γ' ⊨σ s ∶ Γ}} → (Σ ⨟ (Γ' ,,, T) ⊨σ ⇑ s ∶ (Γ ,,, T))
