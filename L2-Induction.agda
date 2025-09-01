@@ -147,9 +147,9 @@ data IH_at_⨾_⊢_∶_ (P : TypeEnv → Expression → Type → Set) : StoreEnv
 ⊢-induction-simple : ∀ {Σ Γ e T} →
     ∀ {P : TypeEnv → Expression → Type → Set} →
     (∀ {Γ e T} → IH P at Σ ⨾ Γ ⊢ e ∶ T → P Γ e T) →
-    (Σ ⨾ Γ ⊢ e ∶ T) →
+    Σ ⨾ Γ ⊢ e ∶ T →
     P Γ e T
-⊢-induction-simple k deriv = ⊢-induction ((λ _ → k)) deriv
+⊢-induction-simple k deriv = ⊢-induction (λ _ → k) deriv
 
 data IH_at_⟶_ (P : Expression × Store → Expression × Store → Set)
                    : Expression × Store → Expression × Store → Set where
