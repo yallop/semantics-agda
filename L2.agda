@@ -71,7 +71,7 @@ data Expression : Set where
   Fn:_⇒_ : Type → Expression → Expression
   Var : 𝕏 → Expression
   LetVal:_≔_In_ : Type → Expression → Expression → Expression
-  LetValRec:_➝_≔[Fn:_⇒_]In_ : Type → Type → Type → Expression → Expression → Expression
+  LetValRec:_➝_≔[Fn⇒_]In_ : Type → Type → Expression → Expression → Expression
 
 infixl 60 _＠_
 infix 50 !_
@@ -83,7 +83,7 @@ infix 20 If_Then_Else_
 infixl 10 _⨾_
 infix 0 Fn:_⇒_
 infixl 0 LetVal:_≔_In_
-infixl 0 LetValRec:_➝_≔[Fn:_⇒_]In_
+infixl 0 LetValRec:_➝_≔[Fn⇒_]In_
 
 data Value : Expression → Set where
   value-N : ∀ {n} → Value (N n)
@@ -155,7 +155,7 @@ rename r (e₁ ＠ e₂) = (rename r e₁) ＠ (rename r e₂)
 rename r (Fn: T ⇒ e) = Fn: T ⇒ (rename (⇑ᵣ r) e)
 rename r (Var x) = Var (r x)
 rename r (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ (rename r e₁) In (rename (⇑ᵣ r) e₂)
-rename r (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ (rename (⇑ᵣ (⇑ᵣ r)) e₁) ]In (rename (⇑ᵣ r) e₂)
+rename r (LetValRec: T₁ ➝ T₂ ≔[Fn⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn⇒ (rename (⇑ᵣ (⇑ᵣ r)) e₁) ]In (rename (⇑ᵣ r) e₂)
 
 ↑ : Expression → Expression
 ↑ = rename suc
@@ -198,7 +198,7 @@ subst s (e₁ ＠ e₂) = (subst s e₁) ＠ (subst s e₂)
 subst s (Fn: T ⇒ e) = Fn: T ⇒ subst (⇑ s) e
 subst s (Var x) = s x
 subst s (LetVal: T ≔ e₁ In e₂) = LetVal: T ≔ subst s e₁ In subst (⇑ s) e₂
-subst s (LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn: T₃ ⇒ subst (⇑ (⇑ s)) e₁ ]In subst (⇑ s) e₂
+subst s (LetValRec: T₁ ➝ T₂ ≔[Fn⇒ e₁ ]In e₂) = LetValRec: T₁ ➝ T₂ ≔[Fn⇒ subst (⇑ (⇑ s)) e₁ ]In subst (⇑ s) e₂
 
 -- Operational Semantics
 data _⟶_ : Expression × Store → Expression × Store → Set where
@@ -282,8 +282,8 @@ data _⟶_ : Expression × Store → Expression × Store → Set where
     ⟨ LetVal: T ≔ v In e , s ⟩ ⟶ ⟨ subst [ v ]ₛ e , s ⟩
 
   letrecfn : ∀ { e₁ e₂ s T₁ T₂ } →
-    ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ , s ⟩ ⟶
-    ⟨ subst ([ Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn: T₁ ⇒ ≥2?↑ e₁ ]In (⇄ e₁) ]ₛ) e₂ , s ⟩
+    ⟨ LetValRec: T₁ ➝ T₂ ≔[Fn⇒ e₁ ]In e₂ , s ⟩ ⟶
+    ⟨ subst ([ Fn: T₁ ⇒ LetValRec: T₁ ➝ T₂  ≔[Fn⇒ ≥2?↑ e₁ ]In (⇄ e₁) ]ₛ) e₂ , s ⟩
 
 
 data _⟶⋆_ : Expression × Store → Expression × Store → Set where
@@ -398,4 +398,4 @@ data _⨾_⊢_∶_ : StoreEnv → TypeEnv → Expression → Type → Set where
     Σ ⨾ ( (Γ ,,, ( T₁ ➝ T₂ ) ,,, T₁)) ⊢ e₁ ∶ T₂ →
     Σ ⨾ ( Γ ,,, ( T₁ ➝ T₂ ) ) ⊢ e₂ ∶ T →
     ------------------------
-    Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn: T₁ ⇒ e₁ ]In e₂ ∶ T
+    Σ ⨾ Γ ⊢ LetValRec: T₁ ➝ T₂ ≔[Fn⇒ e₁ ]In e₂ ∶ T

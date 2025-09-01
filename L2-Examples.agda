@@ -25,21 +25,21 @@ slide-129-reduction-4 : ∀ { s } → ⟨ N (+_ 7) [ + ] (N (+_ 5)) , s ⟩ ⟶ 
 slide-129-reduction-4 = op+
 
 
-slide-152-example : Expression 
-slide-152-example = 
-  LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In (Var 0) ＠ N (+_ 3)
+slide-152-example : Expression
+slide-152-example =
+  LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In (Var 0) ＠ N (+_ 3)
 
-Δ = LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (Var 1) [ ≥ ] N (1ℤ) Then (Var 1) [ + ] (Var 0) ＠ ((Var 1) [ + ] (N ( -1ℤ ))) Else N (+_ 0)
+Δ = LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (Var 1) [ ≥ ] N (1ℤ) Then (Var 1) [ + ] (Var 0) ＠ ((Var 1) [ + ] (N ( -1ℤ ))) Else N (+_ 0)
 
-slide-152-reduction-1 : ∀ {s} → 
-  ⟨ LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In (Var 0) ＠ N (+_ 3) , s ⟩ ⟶ ⟨ (Fn: int ⇒ Δ) ＠ N (+_ 3) , s ⟩ 
+slide-152-reduction-1 : ∀ {s} →
+  ⟨ LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In (Var 0) ＠ N (+_ 3) , s ⟩ ⟶ ⟨ (Fn: int ⇒ Δ) ＠ N (+_ 3) , s ⟩
 slide-152-reduction-1 = letrecfn
 
-slide-152-reduction-2 : ∀ {s} → 
-  ⟨ (Fn: int ⇒ Δ) ＠ N (+_ 3) , s ⟩ ⟶ ⟨ LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 3)) [ ≥ ] N (1ℤ) Then (N (+_ 3)) [ + ] (Var 0) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) Else N (+_ 0) , s ⟩
+slide-152-reduction-2 : ∀ {s} →
+  ⟨ (Fn: int ⇒ Δ) ＠ N (+_ 3) , s ⟩ ⟶ ⟨ LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 3)) [ ≥ ] N (1ℤ) Then (N (+_ 3)) [ + ] (Var 0) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) Else N (+_ 0) , s ⟩
 slide-152-reduction-2 = fn value-N
 
-slide-152-reduction-3 : ∀ {s} → ⟨ LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 3)) [ ≥ ] N (1ℤ) Then (N (+_ 3)) [ + ] (Var 0) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) Else N (+_ 0) , s ⟩ ⟶ ⟨ If (N (+_ 3)) [ ≥ ] N (1ℤ) Then (N (+_ 3)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) Else N (+_ 0) , s ⟩
+slide-152-reduction-3 : ∀ {s} → ⟨ LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 3)) [ ≥ ] N (1ℤ) Then (N (+_ 3)) [ + ] (Var 0) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) Else N (+_ 0) , s ⟩ ⟶ ⟨ If (N (+_ 3)) [ ≥ ] N (1ℤ) Then (N (+_ 3)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) Else N (+_ 0) , s ⟩
 slide-152-reduction-3 = letrecfn
 
 slide-152-reduction-4 : ∀ {s} → ⟨ If (N (+_ 3)) [ ≥ ] N (1ℤ) Then (N (+_ 3)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) Else N (+_ 0) , s ⟩ ⟶ ⟨ If (B true) Then (N (+_ 3)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) Else N (+_ 0) , s ⟩
@@ -51,25 +51,25 @@ slide-152-reduction-5 = if1
 slide-152-reduction-6 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 3)) [ + ] (N ( -1ℤ ))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 2)) , s ⟩
 slide-152-reduction-6 = op2 value-N (app2 value-Fn op+)
 
-slide-152-reduction-7 :  ∀ {s} → ⟨ (N (+_ 3)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 2)) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] (LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 2)) [ ≥ ] N (1ℤ) Then (N (+_ 2)) [ + ] (Var 0) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩
+slide-152-reduction-7 :  ∀ {s} → ⟨ (N (+_ 3)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 2)) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] (LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 2)) [ ≥ ] N (1ℤ) Then (N (+_ 2)) [ + ] (Var 0) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩
 slide-152-reduction-7 = op2 value-N (fn value-N)
 
-slide-152-reduction-8 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] (LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 2)) [ ≥ ] N (1ℤ) Then (N (+_ 2)) [ + ] (Var 0) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] (If (N (+_ 2)) [ ≥ ] N (1ℤ) Then (N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩
+slide-152-reduction-8 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] (LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 2)) [ ≥ ] N (1ℤ) Then (N (+_ 2)) [ + ] (Var 0) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] (If (N (+_ 2)) [ ≥ ] N (1ℤ) Then (N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩
 slide-152-reduction-8 = op2 value-N letrecfn
 
 slide-152-reduction-9 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] (If (N (+_ 2)) [ ≥ ] N (1ℤ) Then (N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] (If (B true) Then (N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩
 slide-152-reduction-9 = op2 value-N (if3 op≥)
 
-slide-152-reduction-10 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] (If (B true) Then (N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ )))) , s ⟩ 
+slide-152-reduction-10 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] (If (B true) Then (N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ )))) , s ⟩
 slide-152-reduction-10 = op2 value-N if1
 
 slide-152-reduction-11 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 2)) [ + ] (N ( -1ℤ )))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 1))) , s ⟩
 slide-152-reduction-11 = op2 value-N (op2 value-N (app2 value-Fn op+))
 
-slide-152-reduction-12 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 1))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 1)) [ ≥ ] N (1ℤ) Then (N (+_ 1)) [ + ] (Var 0) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))) Else N (+_ 0))) , s ⟩
+slide-152-reduction-12 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 1))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 1)) [ ≥ ] N (1ℤ) Then (N (+_ 1)) [ + ] (Var 0) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))) Else N (+_ 0))) , s ⟩
 slide-152-reduction-12 = op2 value-N (op2 value-N (fn value-N))
 
-slide-152-reduction-13 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 1)) [ ≥ ] N (1ℤ) Then (N (+_ 1)) [ + ] (Var 0) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))) Else N (+_ 0))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (If (N (+_ 1)) [ ≥ ] N (1ℤ) Then (N (+_ 1)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))) Else N (+_ 0))) , s ⟩
+slide-152-reduction-13 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 1)) [ ≥ ] N (1ℤ) Then (N (+_ 1)) [ + ] (Var 0) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))) Else N (+_ 0))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (If (N (+_ 1)) [ ≥ ] N (1ℤ) Then (N (+_ 1)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))) Else N (+_ 0))) , s ⟩
 slide-152-reduction-13 = op2 value-N (op2 value-N letrecfn)
 
 slide-152-reduction-14 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (If (N (+_ 1)) [ ≥ ] N (1ℤ) Then (N (+_ 1)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))) Else N (+_ 0))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] (If (B true) Then (N (+_ 1)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))) Else N (+_ 0))) , s ⟩
@@ -81,10 +81,10 @@ slide-152-reduction-15 = op2 value-N (op2 value-N if1)
 slide-152-reduction-16 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 1)) [ + ] (N ( -1ℤ ))))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 0)))) , s ⟩
 slide-152-reduction-16 = op2 value-N (op2 value-N (op2 value-N (app2 value-Fn op+)))
 
-slide-152-reduction-17 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 0)))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 0)) [ ≥ ] N (1ℤ) Then (N (+_ 0)) [ + ] (Var 0) ＠ ((N (+_ 0)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)))) , s ⟩
+slide-152-reduction-17 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (Fn: int ⇒ Δ) ＠ (N (+_ 0)))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 0)) [ ≥ ] N (1ℤ) Then (N (+_ 0)) [ + ] (Var 0) ＠ ((N (+_ 0)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)))) , s ⟩
 slide-152-reduction-17 = op2 value-N (op2 value-N (op2 value-N (fn value-N)))
 
-slide-152-reduction-18 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (LetValRec: int ➝ int ≔[Fn: int ⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 0)) [ ≥ ] N (1ℤ) Then (N (+_ 0)) [ + ] (Var 0) ＠ ((N (+_ 0)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (If (N (+_ 0)) [ ≥ ] N (1ℤ) Then (N (+_ 0)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 0)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)))) , s ⟩
+slide-152-reduction-18 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (LetValRec: int ➝ int ≔[Fn⇒ If (Var 0) [ ≥ ] N (1ℤ) Then (Var 0) [ + ] (Var 1) ＠ ((Var 0) [ + ] (N ( -1ℤ ))) Else N (+_ 0) ]In If (N (+_ 0)) [ ≥ ] N (1ℤ) Then (N (+_ 0)) [ + ] (Var 0) ＠ ((N (+_ 0)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (If (N (+_ 0)) [ ≥ ] N (1ℤ) Then (N (+_ 0)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 0)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)))) , s ⟩
 slide-152-reduction-18 = op2 value-N (op2 value-N (op2 value-N (letrecfn)))
 
 slide-152-reduction-19 : ∀ {s} → ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (If (N (+_ 0)) [ ≥ ] N (1ℤ) Then (N (+_ 0)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 0)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)))) , s ⟩ ⟶ ⟨ (N (+_ 3)) [ + ] ((N (+_ 2)) [ + ] ((N (+_ 1)) [ + ] (If (B false) Then (N (+_ 0)) [ + ] (Fn: int ⇒ Δ) ＠ ((N (+_ 0)) [ + ] (N ( -1ℤ ))) Else N (+_ 0)))) , s ⟩
