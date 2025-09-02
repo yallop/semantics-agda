@@ -55,8 +55,8 @@ instance
         (suc x) T → (Renaming (p x T) {{compatible (λ _ → refl)}})})
 
 -- Lemma 20: Substitution
-Substitution : ∀ {Σ Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → (∀ {Γ' s} → {{Σ ⨟ Γ' ⊨σ s ∶ Γ}} → Σ ⨾ Γ' ⊢ subst s e ∶ T)
-Substitution {Σ} deriv = ⊢-induction-simple case deriv where
+Substitution : ∀ {Σ Γ e T} → Σ ⨾ Γ ⊢ e ∶ T → (∀ {Γ' s} → Σ ⨟ Γ' ⊨σ s ∶ Γ → Σ ⨾ Γ' ⊢ subst s e ∶ T)
+Substitution {Σ} deriv substitution = (⊢-induction-simple case deriv) {{substitution}} where
     P : TypeEnv → Expression → Type → Set
     P Γ e T = ∀ {Γ' s} → {{Σ ⨟ Γ' ⊨σ s ∶ Γ}} → Σ ⨾ Γ' ⊢ subst s e ∶ T
     case : ∀ {Γ e T} → IH P at Σ ⨾ Γ ⊢ e ∶ T → P Γ e T
@@ -146,11 +146,13 @@ Progress {Σ} {e} {s = s} derivation ∈s-if-∈Σ = structural-induction case e
   ... | step r = step (let1 r)
   case ih (letrecfn closed closed₁) = step letrecfn
 
-≥2?↑-has-type : ∀ {Γ T T' T''} → (Γ ,,, T'' ,,, T' ,,, T) ⊢ρ ≥2?+1 ∶ (Γ ,,, T' ,,, T)
-≥2?↑-has-type = compatible (λ {zero → refl ; (suc zero) → refl ; (suc (suc x)) → refl})
+instance
+  ≥2?↑-has-type : ∀ {Γ T T' T''} → (Γ ,,, T'' ,,, T' ,,, T) ⊢ρ ≥2?+1 ∶ (Γ ,,, T' ,,, T)
+  ≥2?↑-has-type = compatible (λ {zero → refl ; (suc zero) → refl ; (suc (suc x)) → refl})
 
-⇄-has-type : ∀ {Γ T T'} → (Γ ,,, T' ,,, T) ⊢ρ swap 0 ∶ (Γ ,,, T ,,, T')
-⇄-has-type = compatible (λ {zero → refl ; (suc zero) → refl ; (suc (suc x)) → refl})
+instance
+  ⇄-has-type : ∀ {Γ T T'} → (Γ ,,, T' ,,, T) ⊢ρ swap 0 ∶ (Γ ,,, T ,,, T')
+  ⇄-has-type = compatible (λ {zero → refl ; (suc zero) → refl ; (suc (suc x)) → refl})
 
 [e]ₛ-has-type : ∀ {Σ Γ T e} → Σ ⨾ Γ ⊢ e ∶ T → (Σ ⨟ Γ ⊨σ [ e ]ₛ ∶ (Γ ,,, T))
 [e]ₛ-has-type deriv = compatible (λ {zero refl → deriv ; (suc _) Γn → var Γn})
@@ -181,7 +183,7 @@ Preservation {Σ} {Γ} r = →-induction case r where
   case     while            (while e₁ e₂)    d⊆ = ⟨ if e₁ (seq e₂ (while e₁ e₂)) skip , d⊆ ⟩
   case     (app1 h₁)        (app e₁ e₂)      d⊆ with ⟨ e₁' , d⊆' ⟩ ← h₁ e₁ d⊆ = ⟨ app e₁' e₂ , d⊆' ⟩
   case     (app2 _ h₂)      (app v₁ e₂)      d⊆ with ⟨ e₂' , d⊆' ⟩ ← h₂ e₂ d⊆ = ⟨ app v₁ e₂' , d⊆' ⟩
-  case     (fn {e = e} _)   (app (fn v₁) v₂) d⊆ = ⟨ Substitution v₁ {{[e]ₛ-has-type v₂}} , d⊆ ⟩
+  case     (fn {e = e} _)   (app (fn v₁) v₂) d⊆ = ⟨ Substitution v₁ ([e]ₛ-has-type v₂) , d⊆ ⟩
   case     (let1 h₁)        (letval e₁ e₂)   d⊆ with ⟨ e₁' , d⊆' ⟩ ← h₁ e₁ d⊆ = ⟨ letval e₁' e₂ , d⊆' ⟩
-  case     (let2 {e = e} _) (letval v₁ e₂)   d⊆ = ⟨ Substitution e₂ {{[e]ₛ-has-type v₁}} , d⊆ ⟩
-  case      letrecfn        (letrecfn e₁ e₂) d⊆ = ⟨ Substitution e₂ {{[e]ₛ-has-type (fn (letrecfn (Renaming e₁ {{≥2?↑-has-type}}) (Renaming e₁ {{⇄-has-type}})))}} , d⊆ ⟩
+  case     (let2 {e = e} _) (letval v₁ e₂)   d⊆ = ⟨ Substitution e₂ ([e]ₛ-has-type v₁) , d⊆ ⟩
+  case      letrecfn        (letrecfn e₁ e₂) d⊆ = ⟨ Substitution e₂ ([e]ₛ-has-type (fn (letrecfn (Renaming e₁) (Renaming e₁)))) , d⊆ ⟩
