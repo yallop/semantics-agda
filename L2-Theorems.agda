@@ -92,7 +92,7 @@ refAssignDiff {zero} {suc ℓ'} (_ ∷ []) _ = refl
 refAssignDiff {zero} {suc ℓ'} (_ ∷ _ ∷ _) _ = refl
 refAssignDiff {suc ℓ} {zero} [] _ = refl
 refAssignDiff {suc ℓ} {zero} (_ ∷ _) _ = refl
-refAssignDiff {suc ℓ} {suc ℓ'} {n} [] ¬p = refAssignDiff {ℓ} {ℓ'} {n} [] (contraposition (cong suc) ¬p)
+refAssignDiff {suc ℓ} {suc ℓ'} [] ¬p = refAssignDiff [] (contraposition (cong suc) ¬p)
 refAssignDiff {suc ℓ} {suc ℓ'} (_ ∷ s) ¬p = refAssignDiff s (contraposition (cong suc) ¬p)
 
 dom⊆-extend : ∀ {ℓ Σ n} s → dom⊆ Σ s → dom⊆ Σ (s ⨄ (ℓ ↦ n))
