@@ -76,8 +76,8 @@ Substitution {Σ} deriv substitution = (⊢-induction-simple case deriv) {{subst
     case (letval h₁ h₂)                    = letval h₁ h₂
     case (letrecfn h₁ h₂)                  = letrecfn h₁ h₂
 
-dom⊆ : StoreEnv → Store → Set
-dom⊆ Σ s = ∀ {ℓ} → Σ ℓ ≡ just intref → ∃[ z ] ((s !! ℓ) ≡ just z)
+_⊢_ : StoreEnv → Store → Set
+Σ ⊢ s = ∀ {ℓ} → Σ ℓ ≡ just intref → ∃[ z ] ((s !! ℓ) ≡ just z)
 
 refAssignSame : ∀ {n} s ℓ → (s ⨄ (ℓ ↦ n)) !! ℓ ≡ just n
 refAssignSame    []    zero  = refl
@@ -95,56 +95,56 @@ refAssignDiff {suc ℓ} {zero} (_ ∷ _) _ = refl
 refAssignDiff {suc ℓ} {suc ℓ'} [] ¬p = refAssignDiff [] (contraposition (cong suc) ¬p)
 refAssignDiff {suc ℓ} {suc ℓ'} (_ ∷ s) ¬p = refAssignDiff s (contraposition (cong suc) ¬p)
 
-dom⊆-extend : ∀ {ℓ Σ n} s → dom⊆ Σ s → dom⊆ Σ (s ⨄ (ℓ ↦ n))
-dom⊆-extend [] d⊆ eq with ⟨ _ , () ⟩ ← d⊆ eq
-dom⊆-extend {ℓ} (x ∷ s) d⊆ {ℓ'} eq with ℓ ≟ ℓ' | d⊆ eq
+⨄-has-type : ∀ {ℓ Σ n} s → Σ ⊢ s → Σ ⊢ (s ⨄ (ℓ ↦ n))
+⨄-has-type [] d⊆ eq with ⟨ _ , () ⟩ ← d⊆ eq
+⨄-has-type {ℓ} (x ∷ s) d⊆ {ℓ'} eq with ℓ ≟ ℓ' | d⊆ eq
 ... | yes refl | _  = ⟨ _ , refAssignSame (x ∷ s) ℓ ⟩
-dom⊆-extend s d⊆ _ | no ¬p | ⟨ fst , eq' ⟩ = ⟨ fst , trans (refAssignDiff s ¬p) eq' ⟩
+⨄-has-type s d⊆ _ | no ¬p | ⟨ fst , eq' ⟩ = ⟨ fst , trans (refAssignDiff s ¬p) eq' ⟩
 
 data val-or-step (s : Store) (e : Expression) : Set where
   val : Value e →  val-or-step s e
   step : ∀ {e' s'} → ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ → val-or-step s e
 
 -- Theorem 18: Progress
-Progress : ∀ {Σ e T s} → Σ ⨾ • ⊢ e ∶ T → dom⊆ Σ s → val-or-step s e
+Progress : ∀ {Σ e T s} → Σ ⨾ • ⊢ e ∶ T → Σ ⊢ s → val-or-step s e
 Progress {Σ} {e} {s = s} derivation ∈s-if-∈Σ = structural-induction case e derivation where
 
   P : Expression → Set
   P e = ∀ {T} → Σ ⨾ • ⊢ e ∶ T → val-or-step s e
 
   case : ∀ {e} → IH P at e → P e
-  case ih int = val value-N
-  case ih bool = val value-B
-  case (ihˡ [ + ] ihʳ) (op+ closedˡ closedʳ) with ihˡ closedˡ | ihʳ closedʳ
+  case _ int = val value-N
+  case _ bool = val value-B
+  case (h₁ [ + ] h₂) (op+ closed₁ closed₂) with h₁ closed₁ | h₂ closed₂
   ... | val value-N | val value-N = step op+
   ... | val value-N | step r = step (op2 value-N r)
-  ... | step l | _ = step (op1 l)
-  case (ihˡ [ ≥ ] ihʳ) (op≥ closedˡ closedʳ) with ihˡ closedˡ | ihʳ closedʳ
+  ... | step r | _ = step (op1 r)
+  case (h₁ [ ≥ ] h₂) (op≥ closed₁ closed₂) with h₁ closed₁ | h₂ closed₂
   ... | val value-N | val value-N = step op≥
   ... | val value-N | step r = step (op2 value-N r)
-  ... | step l | _ = step (op1 l)
-  case (If ih Then _ Else _) (if closed _ _) with ih closed
+  ... | step r | _ = step (op1 r)
+  case (If h Then _ Else _) (if closed _ _) with h closed
   ... | val (value-B {false}) = step if2
   ... | val (value-B {true}) = step if1
   ... | step r = step (if3 r)
-  case (ℓ := ih) (assign ℓ∈Σ closed) with ih closed
+  case (ℓ := h) (assign ℓ∈Σ closed) with h closed
   ... | val value-N with ⟨ _ , ℓ∈s ⟩ ← ∈s-if-∈Σ ℓ∈Σ = step (assign1 ℓ∈s)
   ... | step x = step (assign2 x)
-  case ih (deref ℓ∈Σ) with ⟨ _ , ℓ∈s ⟩ ← ∈s-if-∈Σ ℓ∈Σ = step (deref ℓ∈s)
-  case ih skip = val value-skip
-  case (ih₁ ⨾ _) (seq closed₁ _) with ih₁ closed₁
+  case _ (deref ℓ∈Σ) with ⟨ _ , ℓ∈s ⟩ ← ∈s-if-∈Σ ℓ∈Σ = step (deref ℓ∈s)
+  case _ skip = val value-skip
+  case (h₁ ⨾ _) (seq closed₁ _) with h₁ closed₁
   ... | val value-skip = step seq1
   ... | step r = step (seq2 r)
-  case ih (while closed closed₁) = step while
-  case ih (fn closed) = val value-Fn
-  case (ihˡ ＠ ihʳ) (app closedˡ closedʳ) with ihˡ closedˡ | ihʳ closedʳ
+  case _ (while closed closed₁) = step while
+  case _ (fn closed) = val value-Fn
+  case (h₁ ＠ h₂) (app closed₁ closed₂) with h₁ closed₁ | h₂ closed₂
   ... | val value-Fn | val value = step (fn value)
   ... | val value-Fn | step r = step (app2 value-Fn r)
-  ... | step l | _ = step (app1 l)
-  case (LetVal: T ≔ ih In _) (letval closed _) with ih closed
+  ... | step r | _ = step (app1 r)
+  case (LetVal: T ≔ h₁ In _) (letval closed₁ _) with h₁ closed₁
   ... | val value = step (let2 value)
   ... | step r = step (let1 r)
-  case ih (letrecfn closed closed₁) = step letrecfn
+  case _ (letrecfn _ _) = step letrecfn
 
 instance
   ≥2?↑-has-type : ∀ {Γ T T' T''} → (Γ ,,, T'' ,,, T' ,,, T) ⊢ρ ≥2?+1 ∶ (Γ ,,, T' ,,, T)
@@ -159,11 +159,11 @@ instance
 
 -- Theorem 19 : Preservation
 Preservation :  ∀ {Σ Γ T e s e' s'} →
-   ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ → Σ ⨾ Γ ⊢ e ∶ T → dom⊆ Σ s → Σ ⨾ Γ ⊢ e' ∶ T × dom⊆ Σ s'
+   ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ → Σ ⨾ Γ ⊢ e ∶ T → Σ ⊢ s → Σ ⨾ Γ ⊢ e' ∶ T × Σ ⊢ s'
 Preservation {Σ} {Γ} r = →-induction case r where
 
   P : Expression × Store → Expression × Store → Set
-  P ⟨ e , s ⟩ ⟨ e' , s' ⟩ = ∀ {T} → Σ ⨾ Γ ⊢ e ∶ T → dom⊆ Σ s → Σ ⨾ Γ ⊢ e' ∶ T × dom⊆ Σ s'
+  P ⟨ e , s ⟩ ⟨ e' , s' ⟩ = ∀ {T} → Σ ⨾ Γ ⊢ e ∶ T → Σ ⊢ s → Σ ⨾ Γ ⊢ e' ∶ T × Σ ⊢ s'
 
   case : ∀ {s s' e e'} → IH P at ⟨ e , s ⟩ ⟶ ⟨ e' , s' ⟩ → P ⟨ e , s ⟩ ⟨ e' , s' ⟩
   case     op+              (op+ _ _)        d⊆ = ⟨ int , d⊆ ⟩
@@ -173,7 +173,7 @@ Preservation {Σ} {Γ} r = →-induction case r where
   case     (op2 _ h₂)       (op+ e₁ e₂)      d⊆ with ⟨ e₂' , d⊆' ⟩ ← h₂ e₂ d⊆ = ⟨ op+ e₁ e₂' , d⊆' ⟩
   case     (op2 _ h₂)       (op≥ e₁ e₂)      d⊆ with ⟨ e₂' , d⊆' ⟩ ← h₂ e₂ d⊆ = ⟨ op≥ e₁ e₂' , d⊆' ⟩
   case     (deref _)        (deref _)        d⊆ = ⟨ int , d⊆ ⟩
-  case {s} (assign1 _)      (assign _ _)     d⊆ = ⟨ skip , dom⊆-extend s d⊆ ⟩
+  case {s} (assign1 _)      (assign _ _)     d⊆ = ⟨ skip , ⨄-has-type s d⊆ ⟩
   case     (assign2 h)      (assign ℓ e)     d⊆ with ⟨ e' , d⊆' ⟩ ← h e d⊆ = ⟨ assign ℓ e' , d⊆' ⟩
   case     seq1             (seq _ e)        d⊆ = ⟨ e , d⊆ ⟩
   case     (seq2 h₁)        (seq e₁ e₂)      d⊆ with ⟨ e₁' , d⊆' ⟩ ← h₁ e₁ d⊆ = ⟨ seq e₁' e₂ , d⊆' ⟩
@@ -183,7 +183,7 @@ Preservation {Σ} {Γ} r = →-induction case r where
   case     while            (while e₁ e₂)    d⊆ = ⟨ if e₁ (seq e₂ (while e₁ e₂)) skip , d⊆ ⟩
   case     (app1 h₁)        (app e₁ e₂)      d⊆ with ⟨ e₁' , d⊆' ⟩ ← h₁ e₁ d⊆ = ⟨ app e₁' e₂ , d⊆' ⟩
   case     (app2 _ h₂)      (app v₁ e₂)      d⊆ with ⟨ e₂' , d⊆' ⟩ ← h₂ e₂ d⊆ = ⟨ app v₁ e₂' , d⊆' ⟩
-  case     (fn {e = e} _)   (app (fn v₁) v₂) d⊆ = ⟨ Substitution v₁ ([e]ₛ-has-type v₂) , d⊆ ⟩
+  case     (fn _)           (app (fn v₁) v₂) d⊆ = ⟨ Substitution v₁ ([e]ₛ-has-type v₂) , d⊆ ⟩
   case     (let1 h₁)        (letval e₁ e₂)   d⊆ with ⟨ e₁' , d⊆' ⟩ ← h₁ e₁ d⊆ = ⟨ letval e₁' e₂ , d⊆' ⟩
-  case     (let2 {e = e} _) (letval v₁ e₂)   d⊆ = ⟨ Substitution e₂ ([e]ₛ-has-type v₁) , d⊆ ⟩
-  case      letrecfn        (letrecfn e₁ e₂) d⊆ = ⟨ Substitution e₂ ([e]ₛ-has-type (fn (letrecfn (Renaming e₁) (Renaming e₁)))) , d⊆ ⟩
+  case     (let2 _)         (letval v₁ e₂)   d⊆ = ⟨ Substitution e₂ ([e]ₛ-has-type v₁) , d⊆ ⟩
+  case     letrecfn         (letrecfn e₁ e₂) d⊆ = ⟨ Substitution e₂ ([e]ₛ-has-type (fn (letrecfn (Renaming e₁) (Renaming e₁)))) , d⊆ ⟩
